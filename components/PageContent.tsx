@@ -3,7 +3,7 @@
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import AboutSection from '@/components/AboutSection';
-import ProjectsSlider from '@/components/ProjectsSlider';
+import ProjectsGrid from '@/components/ProjectsGrid';
 import Experience from '@/components/Experience';
 import Skills from '@/components/Skills';
 import Contact from '@/components/Contact';
@@ -15,7 +15,7 @@ export default function PageContent() {
       <Navbar />
       <Hero />
       <AboutSection />
-      <ProjectsSlider />
+      <ProjectsGrid />
       <Experience />
       <Skills />
       <Contact />

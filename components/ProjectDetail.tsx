@@ -56,7 +56,7 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
       {/* How it's wired (Tech Stack) */}
       <div className="space-y-4">
         <h3 className="text-2xl font-black uppercase tracking-wide">
-          How It's Wired
+          How It&apos;s Wired
         </h3>
         <div className="flex flex-wrap gap-3">
           {project.techStack.map((tech) => (

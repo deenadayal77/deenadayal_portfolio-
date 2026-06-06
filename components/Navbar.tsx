@@ -61,7 +61,7 @@ export default function Navbar() {
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="md:hidden border-t" style={{ borderColor: 'var(--border)' }} style={{ backgroundColor: 'var(--bg-secondary)' }}>
+          <div className="md:hidden border-t" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-secondary)' }}>
             <div className="py-4 space-y-2 px-4">
               {navLinks.map((link) => (
                 <a

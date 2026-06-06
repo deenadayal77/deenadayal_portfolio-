@@ -30,10 +30,10 @@ export default function Skills() {
             return (
               <div
                 key={i}
-                className="group glass-effect p-6 rounded-xl hover:border-primary/70 transition-all duration-300 hover:shadow-glow hover-lift relative overflow-hidden"
+                className="group glass-effect p-6 rounded-2xl border-cyan-400/30 hover:border-cyan-400/80 transition-all duration-300 hover:shadow-glow hover:scale-105 relative overflow-hidden"
               >
                 {/* Gradient background on hover */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} to-primary opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+                <div className={`absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
 
                 <div className="relative z-10">
                   {/* Icon */}

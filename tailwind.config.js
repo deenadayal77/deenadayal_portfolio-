@@ -4,29 +4,26 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#00D9FF',
-        dark: '#0a0a0a',
-        surface: '#1a1a1a',
-        accent: '#00D9FF',
+        primary: '#06B6D4',
+        dark: '#0f172a',
+        surface: '#1e293b',
+        accent: '#06B6D4',
       },
       fontFamily: {
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
         display: ['Space Grotesk', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
-        'gradient-primary': 'linear-gradient(135deg, #00D9FF 0%, #0099CC 100%)',
-        'gradient-dark': 'linear-gradient(135deg, #0a0a0a 0%, #0f1419 100%)',
+        'gradient-primary': 'linear-gradient(135deg, #06B6D4 0%, #0EA5E9 100%)',
+        'gradient-dark': 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
       },
       boxShadow: {
-        glow: '0 0 20px rgba(0, 217, 255, 0.3)',
-        'glow-lg': '0 0 40px rgba(0, 217, 255, 0.5)',
+        glow: '0 0 30px rgba(6, 182, 212, 0.4)',
+        'glow-lg': '0 0 50px rgba(6, 182, 212, 0.6)',
       },
       animation: {
-        'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
-        'glow': 'glow 2s ease-in-out infinite',
-      },
-      backdropBlur: {
-        'xl': '16px',
+        'fade-in-up': 'fadeInUp 0.7s ease-out forwards',
+        'glow': 'glow 3s ease-in-out infinite',
       },
     },
   },

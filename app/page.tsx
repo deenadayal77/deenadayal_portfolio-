@@ -1,8 +1,8 @@
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 
 export const dynamic = 'force-dynamic';
 
-const PageContent = dynamic(() => import('@/components/PageContent'), {
+const PageContent = dynamicImport(() => import('@/components/PageContent'), {
   ssr: true,
 });
 

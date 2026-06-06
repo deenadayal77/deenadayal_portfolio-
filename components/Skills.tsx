@@ -17,11 +17,11 @@ export default function Skills() {
       </div>
 
       <div className="max-w-7xl mx-auto">
-        <div className="mb-16">
+        <div className="mb-16 animate-fade-in-up">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             Technical <span className="gradient-text">Skills</span>
           </h2>
-          <p className="text-white/60 text-lg">Expertise across AI, development, and professional competencies</p>
+          <p className="text-[var(--text-secondary)]">Expertise across AI, development, and professional competencies</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

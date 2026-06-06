@@ -3,37 +3,57 @@ import { Brain, Code2, Zap, MessageSquare } from 'lucide-react';
 import { skills } from '@/lib/data';
 
 const categories = [
-  { title: 'AI & ML', icon: Brain, list: skills.ai_ml },
-  { title: 'Programming', icon: Code2, list: skills.programming },
-  { title: 'Frameworks', icon: Zap, list: [...skills.frontend, ...skills.backend.slice(0, 2)] },
-  { title: 'Professional', icon: MessageSquare, list: skills.soft },
+  { title: 'AI & ML', icon: Brain, list: skills.ai_ml, color: 'from-purple-500' },
+  { title: 'Programming', icon: Code2, list: skills.programming, color: 'from-blue-500' },
+  { title: 'Frameworks', icon: Zap, list: [...skills.frontend, ...skills.backend.slice(0, 2)], color: 'from-pink-500' },
+  { title: 'Professional', icon: MessageSquare, list: skills.soft, color: 'from-green-500' },
 ];
 
 export default function Skills() {
   return (
-    <section id="skills" className="py-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-4xl md:text-5xl font-bold mb-4">
-          Technical <span className="gradient-text">Skills</span>
-        </h2>
+    <section id="skills" className="py-20 px-4 sm:px-6 lg:px-8 relative">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-blue-400/5 rounded-full mix-blend-multiply filter blur-3xl opacity-50" />
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+            Technical <span className="gradient-text">Skills</span>
+          </h2>
+          <p className="text-white/60 text-lg">Expertise across AI, development, and professional competencies</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {categories.map((cat, i) => {
             const Icon = cat.icon;
             return (
-              <div key={i} className="p-6 bg-white/5 border border-white/10 rounded-lg hover:border-primary/50 hover:bg-white/10">
-                <div className="flex items-center gap-3 mb-6">
-                  <Icon className="w-6 h-6 text-primary" />
-                  <h3 className="text-lg font-bold">{cat.title}</h3>
+              <div
+                key={i}
+                className="group glass-effect p-6 rounded-xl hover:border-primary/70 transition-all duration-300 hover:shadow-glow hover-lift relative overflow-hidden"
+              >
+                {/* Gradient background on hover */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} to-primary opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+
+                <div className="relative z-10">
+                  {/* Icon */}
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                      <Icon className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-bold">{cat.title}</h3>
+                  </div>
+
+                  {/* Skills List */}
+                  <ul className="space-y-3">
+                    {cat.list.map((skill) => (
+                      <li key={skill} className="flex items-center gap-2 group/item">
+                        <span className="w-1.5 h-1.5 bg-primary rounded-full group-hover/item:scale-150 transition-transform" />
+                        <span className="text-white/70 group-hover/item:text-white transition-colors text-sm">{skill}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <ul className="space-y-3">
-                  {cat.list.map((skill) => (
-                    <li key={skill} className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-primary rounded-full" />
-                      <span className="text-white/70 text-sm">{skill}</span>
-                    </li>
-                  ))}
-                </ul>
               </div>
             );
           })}

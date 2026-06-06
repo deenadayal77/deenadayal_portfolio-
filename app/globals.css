@@ -2,11 +2,139 @@
 @tailwind components;
 @tailwind utilities;
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { @apply bg-dark text-white font-sans; }
-h1, h2, h3 { @apply font-bold; }
-.gradient-text { @apply bg-gradient-to-r from-primary to-cyan-400 bg-clip-text text-transparent; }
-.glass-effect { @apply bg-white/10 backdrop-blur-md border border-white/20; }
-a:focus-visible { @apply outline-2 outline-offset-2 outline-primary; }
-::selection { @apply bg-primary text-dark; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-dark text-white font-sans;
+  background: linear-gradient(135deg, #0a0a0a 0%, #0f1419 50%, #0a0a0a 100%);
+  background-attachment: fixed;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-bold leading-tight;
+}
+
+h1 {
+  @apply text-4xl md:text-5xl lg:text-7xl;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  @apply text-3xl md:text-4xl lg:text-5xl;
+  letter-spacing: -0.01em;
+}
+
+/* Gradient Text */
+.gradient-text {
+  @apply bg-gradient-to-r from-primary via-cyan-300 to-blue-400 bg-clip-text text-transparent;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+/* Glass Effect */
+.glass-effect {
+  @apply bg-white/5 backdrop-blur-xl border border-white/20 rounded-xl;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+}
+
+.glass-effect-sm {
+  @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-lg;
+}
+
+/* Hover Effects */
+.hover-lift {
+  @apply transition-all duration-300 hover:scale-105 hover:shadow-lg;
+}
+
+.hover-glow {
+  @apply transition-all duration-300 hover:shadow-lg hover:shadow-primary/50;
+}
+
+/* Animated Gradient */
+.gradient-border {
+  position: relative;
+  background: linear-gradient(135deg, #0a0a0a, #0a0a0a) padding-box,
+              linear-gradient(135deg, #00D9FF, #0099CC) border-box;
+  border: 2px solid transparent;
+}
+
+/* Focus Styles */
+a:focus-visible, button:focus-visible {
+  @apply outline-2 outline-offset-2 outline-primary;
+}
+
+/* Selection */
+::selection {
+  @apply bg-primary text-dark;
+}
+
+/* Smooth Fade Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* Pulse Animation */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+/* Glow Effect */
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(0, 217, 255, 0.6);
+  }
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-dark;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-surface rounded-full;
+  transition: background-color 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary/70;
+}

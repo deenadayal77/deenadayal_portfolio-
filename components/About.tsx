@@ -13,13 +13,13 @@ export default function About() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <div className="md:col-span-2">
             <p className="text-lg text-white/80 leading-relaxed mb-6">
-              I'm <span className="font-semibold">Deena Dayal B K</span>, a Computer Science Engineering student at PES College of Engineering, currently interning at Dhee Coding Labs.
+              I&apos;m <span className="font-semibold">Deena Dayal B K</span>, a Computer Science Engineering student at PES College of Engineering, currently interning at Dhee Coding Labs.
             </p>
             <p className="text-lg text-white/80 leading-relaxed mb-6">
               My work focuses on <span className="text-primary font-semibold">full-stack development</span>, generative AI integration, and building practical solutions that solve real problems.
             </p>
             <p className="text-lg text-white/80 leading-relaxed">
-              As <span className="text-primary font-semibold">ISTE President</span>, I've developed strong leadership skills through organizing events and leading student initiatives.
+              As <span className="text-primary font-semibold">ISTE President</span>, I&apos;ve developed strong leadership skills through organizing events and leading student initiatives.
             </p>
           </div>
 

@@ -30,18 +30,18 @@ export default function Skills() {
             return (
               <div
                 key={i}
-                className="group glass-effect p-6 rounded-2xl border-cyan-400/30 hover:border-cyan-400/80 transition-all duration-300 hover:shadow-glow hover:scale-105 relative overflow-hidden"
+                className="group neon-border p-6 rounded-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden"
               >
                 {/* Gradient background on hover */}
-                <div className={`absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300`} style={{ background: `linear-gradient(to bottom right, var(--accent)/10, var(--accent)/5)` }} />
 
                 <div className="relative z-10">
                   {/* Icon */}
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                      <Icon className="w-6 h-6 text-primary" />
+                    <div className="p-3 rounded-lg group-hover:transition-colors" style={{ background: `var(--accent)/10` }}>
+                      <Icon className="w-6 h-6" style={{ color: `var(--accent)` }} />
                     </div>
-                    <h3 className="text-lg font-bold">{cat.title}</h3>
+                    <h3 className="text-lg font-bold text-[var(--text-primary)]">{cat.title}</h3>
                   </div>
 
                   {/* Skills List */}

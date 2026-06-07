@@ -19,9 +19,9 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-[var(--accent)] uppercase">LIVE AT</span>
-          <span className="text-[var(--text-secondary)]">Portfolio</span>
+          <span className="text-[var(--text-primary)]">Portfolio</span>
         </div>
-        <h2 className="text-5xl font-black gradient-text">{project.title}</h2>
+        <h2 className="text-5xl font-black gradient-text text-[var(--text-primary)]">{project.title}</h2>
         <p className="text-xl text-[var(--text-secondary)] leading-relaxed max-w-2xl">
           {project.description}
         </p>

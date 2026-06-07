@@ -34,11 +34,11 @@ export default function Hero() {
             {/* Headline */}
             <div>
               <h1 className="text-6xl md:text-7xl font-black leading-tight mb-4">
-                <span className="text-white">Creative</span>
+                <span className="text-[var(--text-primary)]">Creative</span>
                 <br />
                 <span className="gradient-text">Full-Stack</span>
                 <br />
-                <span className="text-white">Developer</span>
+                <span className="text-[var(--text-primary)]">Developer</span>
               </h1>
               <p className="text-xl text-[var(--text-secondary)] max-w-lg leading-relaxed">
                 I craft beautiful, performant web experiences with cutting-edge AI integration. Transforming ideas into innovative digital solutions.
@@ -71,7 +71,7 @@ export default function Hero() {
               </a>
               <a
                 href="#contact"
-                className="px-8 py-4 neon-border rounded-xl font-bold hover:bg-[var(--accent)]/10 transition-all duration-300 text-center"
+                className="px-8 py-4 neon-border rounded-xl font-bold hover:bg-[var(--accent)]/10 transition-all duration-300 text-center text-[var(--text-primary)]"
               >
                 Get in Touch
               </a>

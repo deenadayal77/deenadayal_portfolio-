@@ -26,7 +26,7 @@ export default function ProjectCard({ project, onOpenModal }: ProjectCardProps) 
 
       {/* Title & Description */}
       <div className="flex-1">
-        <h3 className="text-2xl font-black text-white group-hover:text-[var(--accent)] transition-colors mb-3">
+        <h3 className="text-2xl font-black text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors mb-3">
           {project.title}
         </h3>
         <p className="text-[var(--text-secondary)] text-sm leading-relaxed">

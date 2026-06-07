@@ -46,7 +46,7 @@ export default function Experience() {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
                   <div className="flex-1">
-                    <h3 className="text-2xl font-black text-white group-hover:text-[var(--accent)] transition-colors duration-300 mb-2">
+                    <h3 className="text-2xl font-black text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors duration-300 mb-2">
                       {job.title}
                     </h3>
                     <div className="flex flex-col gap-1">

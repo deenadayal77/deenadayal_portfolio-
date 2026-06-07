@@ -33,24 +33,24 @@ export default function Hero() {
 
             {/* Headline */}
             <div>
-              <h1 className="text-6xl md:text-7xl font-black leading-tight mb-4">
-                <span className="text-[var(--text-primary)]">Creative</span>
+              <h1 className="text-5xl md:text-6xl font-black leading-tight mb-6">
+                I build AI systems that turn
                 <br />
-                <span className="gradient-text">Full-Stack</span>
+                <span className="gradient-text">manual work into</span>
                 <br />
-                <span className="text-[var(--text-primary)]">Developer</span>
+                reliable automation.
               </h1>
-              <p className="text-xl text-[var(--text-secondary)] max-w-lg leading-relaxed">
-                I craft beautiful, performant web experiences with cutting-edge AI integration. Transforming ideas into innovative digital solutions.
+              <p className="text-lg text-[var(--text-secondary)] max-w-lg leading-relaxed">
+                Building intelligent automation workflows that eliminate repetitive tasks, scale operations, and drive measurable business impact through AI-powered process automation.
               </p>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-3 gap-4 pt-4">
               {[
-                { value: '10+', label: 'Projects' },
-                { value: '5+', label: 'Tech Stack' },
-                { value: '800+', label: 'Impact' },
+                { value: '4+', label: 'Workflows' },
+                { value: '100k+', label: 'Tasks/Day' },
+                { value: '40%+', label: 'Time Saved' },
               ].map((stat) => (
                 <div key={stat.label} className="group neon-border p-4 rounded-xl bg-[var(--accent)]/5 cursor-pointer hover:bg-[var(--accent)]/10 transition-all">
                   <div className="text-3xl font-black text-[var(--accent)]">{stat.value}</div>

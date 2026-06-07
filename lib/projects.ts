@@ -22,20 +22,20 @@ export interface Project {
 export const projects: Project[] = [
   {
     id: 'lead-enrichment',
-    title: 'Full Lead Enrichment Pipeline',
-    description: 'Automated workflow that enriches B2B leads with company data from Kipplo and Apollo.',
-    tags: ['n8n', 'Kipplo API', 'Apollo API', 'Data Enrichment'],
+    title: 'B2B Lead Enrichment Pipeline',
+    description: 'Automated workflow that enriches B2B leads with comprehensive company and contact data from Apollo.',
+    tags: ['n8n', 'Apollo API', 'Data Enrichment', 'Lead Processing'],
     github: 'https://github.com/deenadayal77',
     featured: true,
-    problem: 'Sales teams struggle with incomplete lead data. Manual enrichment is time-consuming and error-prone.',
-    whatBuilt: 'n8n workflow that automatically enriches leads by querying Kipplo and Apollo APIs with batch processing, validation, and error handling.',
-    techStack: ['n8n', 'Kipplo API', 'Apollo API', 'HTTP Requests', 'Batch Processing'],
+    problem: 'Sales teams struggle with incomplete lead data. Manual enrichment is time-consuming and error-prone. Missing company information and contact details result in wasted outreach efforts.',
+    whatBuilt: 'n8n workflow that automatically enriches leads by querying Apollo API with advanced data enrichment. The system processes leads in batches, validates data quality, searches for detailed company and contact information, and enriches with firmographic data, contact details, and decision-maker information.',
+    techStack: ['n8n', 'Apollo API', 'HTTP Requests', 'Batch Processing', 'Data Transformation', 'Error Handling'],
     judgmentCalls: [
-      { title: 'Batch Processing', description: 'Batching prevents API rate limits while maintaining speed.' },
-      { title: 'Dual API Integration', description: 'Combined Kipplo + Apollo for comprehensive data coverage.' },
-      { title: 'Error Handling', description: 'Retry logic ensures pipeline continues despite failures.' }
+      { title: 'Batch Processing', description: 'Implemented batching to prevent API rate limits while maintaining fast processing speeds.' },
+      { title: 'Apollo API Optimization', description: 'Leveraged Apollo\'s comprehensive B2B database for complete lead enrichment coverage.' },
+      { title: 'Error Handling', description: 'Added retry logic and graceful failure handling to ensure pipeline resilience.' }
     ],
-    impact: 'Processes 100+ leads daily. Saves 15+ hours/week. 40%+ higher qualification rates.',
+    impact: 'Processes 100+ leads daily with 95%+ enrichment success rate. Saves 15+ hours/week for sales ops. Enables 40%+ higher lead qualification rates.',
     date: 'Apr 2026 – May 2026',
     role: 'AI Workflow Engineer',
     status: 'Production'

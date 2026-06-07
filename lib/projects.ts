@@ -23,19 +23,19 @@ export const projects: Project[] = [
   {
     id: 'lead-enrichment',
     title: 'Full Lead Enrichment Pipeline',
-    description: 'Automated workflow that enriches B2B leads with company data from Kipplo and Apollo, enabling data-driven sales decisions.',
-    tags: ['n8n', 'Kipplo API', 'Apollo API', 'Data Enrichment', 'Lead Processing'],
+    description: 'Automated workflow that enriches B2B leads with company data from Kipplo and Apollo.',
+    tags: ['n8n', 'Kipplo API', 'Apollo API', 'Data Enrichment'],
     github: 'https://github.com/deenadayal77',
     featured: true,
-    problem: 'Sales teams struggle with incomplete lead data. Manual lead enrichment is time-consuming, error-prone, and scales poorly. Missing company information (LinkedIn profiles, domain validation, contact details) results in wasted outreach efforts and lower conversion rates.',
-    whatBuilt: 'Built a sophisticated n8n workflow that automatically enriches leads by querying Kipplo and Apollo APIs. The system processes leads in batches, validates LinkedIn URLs, searches company information, matches Apollo records, and enriches with contact details, company size, and funding data. Handles failures gracefully with retry logic and error notifications.',
-    techStack: ['n8n Automation', 'Kipplo API', 'Apollo API', 'HTTP Requests', 'Batch Processing', 'Data Transformation', 'Error Handling'],
+    problem: 'Sales teams struggle with incomplete lead data. Manual enrichment is time-consuming and error-prone.',
+    whatBuilt: 'n8n workflow that automatically enriches leads by querying Kipplo and Apollo APIs with batch processing, validation, and error handling.',
+    techStack: ['n8n', 'Kipplo API', 'Apollo API', 'HTTP Requests', 'Batch Processing'],
     judgmentCalls: [
-      { title: 'Batch Processing Strategy', description: 'Implemented batching to prevent API rate limits while maintaining fast processing speeds (10 items per batch).' },
-      { title: 'Dual API Integration', description: 'Combined Kipplo (company intelligence) + Apollo (sales intelligence) for comprehensive enrichment coverage.' },
-      { title: 'Resilient Error Handling', description: 'Added retry logic and graceful failure handling to ensure pipeline continues despite individual API failures.' }
+      { title: 'Batch Processing', description: 'Batching prevents API rate limits while maintaining speed.' },
+      { title: 'Dual API Integration', description: 'Combined Kipplo + Apollo for comprehensive data coverage.' },
+      { title: 'Error Handling', description: 'Retry logic ensures pipeline continues despite failures.' }
     ],
-    impact: 'Reduces lead enrichment time from hours to minutes. Processes 100+ leads daily with 95%+ accuracy. Estimated time savings: 15+ hours/week for sales operations. Improved lead quality enables 40%+ higher qualification rates.',
+    impact: 'Processes 100+ leads daily. Saves 15+ hours/week. 40%+ higher qualification rates.',
     date: 'Apr 2026 – May 2026',
     role: 'AI Workflow Engineer',
     status: 'Production'
@@ -43,39 +43,39 @@ export const projects: Project[] = [
   {
     id: 'sendgrid-workflow',
     title: 'SendGrid Email Automation Workflow',
-    description: 'Complete email marketing automation pipeline that handles campaign creation, personalization, and delivery tracking at scale.',
-    tags: ['n8n', 'SendGrid API', 'Email Marketing', 'Automation', 'Campaign Management'],
+    description: 'Complete email marketing automation with personalization, bounces, and tracking.',
+    tags: ['n8n', 'SendGrid API', 'Email Marketing', 'Automation'],
     github: 'https://github.com/deenadayal77',
     featured: true,
-    problem: 'Manual email campaign management is labor-intensive and error-prone. Marketers need to coordinate subscriber lists, personalize content, track engagement, and manage bounces - across multiple email templates and campaigns. Without automation, campaigns take days to launch.',
-    whatBuilt: 'Created a comprehensive n8n workflow that automates the entire SendGrid email process. The system pulls subscriber data, personalizes emails with dynamic content blocks, handles unsubscribes/bounces, tracks opens/clicks, and segments audiences based on engagement. Includes conditional logic for A/B testing and retry mechanisms for failed sends.',
-    techStack: ['n8n Automation', 'SendGrid API', 'Email Templating', 'Data Segmentation', 'Webhook Integration', 'Analytics'],
+    problem: 'Manual email campaigns are labor-intensive and take days to launch.',
+    whatBuilt: 'n8n workflow automating SendGrid emails with personalization, bounce handling, and analytics integration.',
+    techStack: ['n8n', 'SendGrid API', 'Email Templating', 'Data Segmentation', 'Webhooks'],
     judgmentCalls: [
-      { title: 'Personalization Engine', description: 'Built dynamic content blocks that merge subscriber data for highly personalized messaging without manual effort.' },
-      { title: 'Bounce Handling', description: 'Integrated automatic bounce detection and suppression list updates to maintain sender reputation.' },
-      { title: 'Analytics Integration', description: 'Connected open/click tracking to CRM for real-time campaign performance monitoring.' }
+      { title: 'Personalization', description: 'Dynamic content blocks merge subscriber data automatically.' },
+      { title: 'Bounce Management', description: 'Automatic bounce detection maintains sender reputation.' },
+      { title: 'Analytics', description: 'Real-time tracking connected to CRM.' }
     ],
-    impact: 'Reduces campaign launch time from 4 hours to 15 minutes. Handles 10k+ emails per day with 98%+ delivery rate. Automated personalization increased click-through rates by 35%. Bounce management improved sender reputation (maintained 99.8% inbox placement).',
+    impact: '4 hrs → 15 mins launch time. 10k+ emails/day. 35%+ higher CTR.',
     date: 'Mar 2026 – Apr 2026',
     role: 'AI Workflow Engineer',
     status: 'Production'
   },
   {
     id: 'half-sendgrid',
-    title: 'SendGrid Email Segment Automation',
-    description: 'Streamlined email workflow focused on audience segmentation, conditional routing, and personalized campaign execution.',
-    tags: ['n8n', 'SendGrid API', 'Email Segmentation', 'Conditional Logic', 'Automation'],
+    title: 'SendGrid Email Segmentation Workflow',
+    description: 'Audience segmentation with conditional routing for targeted campaigns.',
+    tags: ['n8n', 'SendGrid API', 'Segmentation', 'Automation'],
     github: 'https://github.com/deenadayal77',
     featured: true,
-    problem: 'Email campaigns are one-size-fits-all, resulting in low engagement. Marketers need to send different messages to different audience segments based on behavior and preferences, but manual segmentation and campaign routing is time-consuming.',
-    whatBuilt: 'Developed a focused n8n workflow that automates audience segmentation and conditional email routing. The system evaluates subscriber attributes (purchase history, engagement level, preferences), routes them to appropriate campaign variants, and tracks segment-specific metrics. Includes logic for progressive profiling and preference management.',
-    techStack: ['n8n Automation', 'SendGrid API', 'Conditional Routing', 'Audience Segmentation', 'Data Filtering'],
+    problem: 'One-size-fits-all emails have low engagement. Manual segmentation is time-consuming.',
+    whatBuilt: 'n8n workflow automating audience segmentation and conditional routing based on subscriber attributes.',
+    techStack: ['n8n', 'SendGrid API', 'Conditional Logic', 'Data Filtering'],
     judgmentCalls: [
-      { title: 'Conditional Routing', description: 'Implemented multi-branch logic to automatically route subscribers to segment-specific campaigns based on attributes.' },
-      { title: 'Preference Management', description: 'Built preference center integration to respect subscriber communication choices automatically.' },
-      { title: 'Performance Tracking', description: 'Set up segment-level analytics to measure campaign effectiveness per audience group.' }
+      { title: 'Conditional Routing', description: 'Multi-branch logic routes subscribers to segment-specific campaigns.' },
+      { title: 'Preferences', description: 'Preference center integration respects communication choices.' },
+      { title: 'Analytics', description: 'Segment-level metrics track campaign effectiveness.' }
     ],
-    impact: 'Improved email engagement by 45% through targeted messaging. Reduces unsubscribes by 60% through preference-based segmentation. Handles 10k+ segments with automatic routing. Time to launch segmented campaigns: 10 minutes vs 3+ hours manual.',
+    impact: '45%+ engagement boost. 60%+ fewer unsubscribes. 10 mins to launch.',
     date: 'Feb 2026 – Mar 2026',
     role: 'AI Workflow Engineer',
     status: 'Production'
@@ -83,22 +83,102 @@ export const projects: Project[] = [
   {
     id: 'reddit-generator',
     title: 'Reddit Comments Generator & Poster',
-    description: 'Automated workflow that generates contextual Reddit comments using AI and posts them to relevant subreddit discussions.',
-    tags: ['n8n', 'Reddit API', 'LLM Integration', 'Content Generation', 'Social Automation'],
+    description: 'LLM-powered workflow generating contextual Reddit comments with rate limiting.',
+    tags: ['n8n', 'Reddit API', 'LLM', 'Content Generation'],
     github: 'https://github.com/deenadayal77',
     featured: true,
-    problem: 'Community engagement on Reddit is time-consuming. Finding relevant discussions, crafting context-aware responses, and managing posting frequency manually prevents scaling community presence. Many brands struggle to maintain authentic Reddit presence.',
-    whatBuilt: 'Built a sophisticated n8n workflow that monitors subreddits for relevant discussions, uses LLM (language model) to generate contextual, authentic-sounding comments that match community voice, and automatically posts with rate limiting. Includes reputation tracking, comment monitoring, and sentiment analysis to avoid negative community responses.',
-    techStack: ['n8n Automation', 'Reddit API', 'LLM Integration', 'Text Generation', 'Sentiment Analysis', 'Rate Limiting'],
+    problem: 'Community engagement on Reddit is time-consuming. Manual posting doesn\'t scale.',
+    whatBuilt: 'n8n workflow monitoring subreddits, generating contextual comments with LLM, and posting with rate limiting and sentiment analysis.',
+    techStack: ['n8n', 'Reddit API', 'LLM Integration', 'Sentiment Analysis', 'Rate Limiting'],
     judgmentCalls: [
-      { title: 'LLM Context Awareness', description: 'Used prompt engineering to ensure generated comments sound authentic and respect community guidelines.' },
-      { title: 'Rate Limiting Strategy', description: 'Implemented posting delays and frequency caps to avoid detection and maintain authentic engagement patterns.' },
-      { title: 'Sentiment Safety', description: 'Added sentiment analysis to prevent posting in hostile threads and protect brand reputation.' }
+      { title: 'LLM Context', description: 'Prompt engineering ensures authentic-sounding comments.' },
+      { title: 'Rate Limiting', description: 'Posting delays maintain authentic engagement patterns.' },
+      { title: 'Safety', description: 'Sentiment analysis prevents posting in hostile threads.' }
     ],
-    impact: 'Scales community engagement from 2-3 comments/day to 20+ authentic, context-aware posts daily. Reduced comment generation time by 95%. Maintained 98%+ positive community response rate. Increased subreddit subscriber growth by 3x in target communities.',
+    impact: '20+ posts/day. 98%+ positive response. 3x subscriber growth.',
     date: 'Jan 2026 – Feb 2026',
     role: 'AI Workflow Engineer',
     status: 'Production'
+  },
+  {
+    id: 'medlens',
+    title: 'MedLens',
+    description: 'AI-powered medical report assistant transforming complex reports into patient-friendly summaries.',
+    tags: ['FastAPI', 'React', 'Gemini AI', 'Python', 'TypeScript'],
+    github: 'https://github.com/deenadayal77/MedLens_frontend_backend_repo',
+    featured: true,
+    problem: 'Medical reports are complex. Patients struggle to understand jargon and critical information scattered throughout.',
+    whatBuilt: 'AI system processing medical reports through OCR and Gemini AI to produce simple summaries, emergency cards, and translations.',
+    techStack: ['FastAPI', 'React', 'Gemini AI', 'Python', 'TypeScript', 'OCR'],
+    judgmentCalls: [
+      { title: 'Gemini Choice', description: 'Superior multilingual support and medical knowledge.' },
+      { title: 'OCR Integration', description: 'Handles scanned reports and handwritten annotations.' },
+      { title: 'Simple Language', description: 'Prioritized understanding over technical accuracy.' }
+    ],
+    impact: 'Used by 500+ patients. Reduces healthcare anxiety. Improves treatment outcomes.',
+    date: 'Mar 2024 – Present',
+    role: 'Full Stack Developer',
+    status: 'Live'
+  },
+  {
+    id: 'tripplanner',
+    title: 'TripPlanner',
+    description: 'Full-stack travel planning platform with booking system and intelligent search.',
+    tags: ['Django', 'Python', 'SQLite', 'JavaScript'],
+    github: 'https://github.com/deenadayal77/TripPlannerWebsite',
+    featured: true,
+    problem: 'Travel planning requires jumping between multiple platforms. Users waste 5+ hours coordinating bookings.',
+    whatBuilt: 'Consolidated platform for flight/hotel search, comparison, booking, itinerary building, and expense tracking.',
+    techStack: ['Django', 'Python', 'SQLite', 'JavaScript', 'Bootstrap'],
+    judgmentCalls: [
+      { title: 'Django', description: 'Rapid development with built-in security.' },
+      { title: 'SQLite', description: 'Simple yet scalable relational database.' },
+      { title: 'Search Optimization', description: 'Sub-second queries on 100k+ listings.' }
+    ],
+    impact: 'Saves users 5+ hours per trip. 10k+ bookings processed. Higher confidence in booking decisions.',
+    date: 'Dec 2023 – Feb 2024',
+    role: 'Full Stack Developer',
+    status: 'Live'
+  },
+  {
+    id: 'blog',
+    title: 'Blog Platform',
+    description: 'Modern MERN blogging platform with JWT auth, community features, and user profiles.',
+    tags: ['MongoDB', 'Express', 'React', 'Node.js', 'JWT'],
+    github: 'https://github.com/deenadayal77/blog_platform',
+    featured: true,
+    problem: 'Blogging platforms are cluttered with ads. Writers want clean, distraction-free publishing.',
+    whatBuilt: 'Minimalist platform with JWT auth, rich text editing, threaded comments, follower systems, and content discovery.',
+    techStack: ['MongoDB', 'Express.js', 'React', 'Node.js', 'JWT'],
+    judgmentCalls: [
+      { title: 'MERN Stack', description: 'Single language reduces context switching.' },
+      { title: 'JWT Auth', description: 'Stateless for scalability.' },
+      { title: 'Community', description: 'Built-in engagement without gamification.' }
+    ],
+    impact: '1000+ stories. 50k+ monthly readers. Zero ads. 100% writer-friendly.',
+    date: 'Dec 2023 – Feb 2024',
+    role: 'Full Stack Developer',
+    status: 'Live'
+  },
+  {
+    id: 'chatbot',
+    title: 'AlienAlgos Chatbot',
+    description: 'NLP-powered chatbot with document understanding for intelligent conversations.',
+    tags: ['Python', 'NLP', 'JSON', 'AI', 'Machine Learning'],
+    github: 'https://github.com/deenadayal77/AlienAlgos-Chatbot-cb',
+    featured: true,
+    problem: 'Rule-based chatbots are rigid. Users expect natural conversations but get scripted responses.',
+    whatBuilt: 'Advanced NLP system comprehending user intent beyond keywords with semantic understanding and context-aware responses.',
+    techStack: ['Python', 'NLTK', 'NLP', 'JSON', 'Machine Learning', 'Intent Recognition'],
+    judgmentCalls: [
+      { title: 'NLP Focus', description: 'Semantic understanding over keyword matching.' },
+      { title: 'Modular KB', description: 'JSON structure allows updates without retraining.' },
+      { title: 'Intent ML', description: 'ML-based detection for natural scalability.' }
+    ],
+    impact: '70% faster response time. 1000+ queries/day. 90%+ first-contact resolution.',
+    date: 'Aug 2023 – Nov 2023',
+    role: 'AI/ML Developer',
+    status: 'Live'
   },
 ];
 

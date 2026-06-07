@@ -105,8 +105,9 @@ export default function Hero() {
                 <div className="absolute inset-0 bg-[var(--bg-primary)] rounded-3xl flex items-center justify-center">
                   <div className="text-center">
                     <Code2 size={100} className="text-[var(--accent)]/30 mb-4 mx-auto" />
-                    <h3 className="text-3xl font-black gradient-text">Full Stack</h3>
-                    <p className="text-sm text-[var(--text-tertiary)] mt-2">React • Python • AI</p>
+                    <h3 className="text-2xl font-black text-[var(--text-primary)]">Automation</h3>
+                    <h3 className="text-2xl font-black gradient-text">Engineer</h3>
+                    <p className="text-sm text-[var(--text-tertiary)] mt-2">n8n • APIs • LLMs</p>
                   </div>
                 </div>
               </div>

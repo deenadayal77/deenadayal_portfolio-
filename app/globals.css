@@ -20,17 +20,17 @@
 
 /* LIGHT THEME - Minimal + Warm Orange */
 [data-theme='light'] {
-  --bg-primary: #fafafa;
-  --bg-secondary: #f5f5f5;
-  --bg-tertiary: #efefef;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f8f8;
+  --bg-tertiary: #f0f0f0;
   --accent: #ff6b35;
   --accent-light: #ff8555;
   --accent-glow: #ff6b35;
-  --text-primary: #1a1a1a;
-  --text-secondary: #404040;
-  --text-tertiary: #7a7a7a;
-  --border: rgba(255, 107, 53, 0.12);
-  --border-glow: rgba(255, 107, 53, 0.2);
+  --text-primary: #000000;
+  --text-secondary: #333333;
+  --text-tertiary: #666666;
+  --border: rgba(255, 107, 53, 0.2);
+  --border-glow: rgba(255, 107, 53, 0.3);
   --shadow: rgba(0, 0, 0, 0.08);
 }
 

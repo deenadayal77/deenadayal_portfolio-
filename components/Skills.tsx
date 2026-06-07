@@ -13,7 +13,7 @@ export default function Skills() {
   return (
     <section id="skills" className="py-20 px-4 sm:px-6 lg:px-8 relative">
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-blue-400/5 rounded-full mix-blend-multiply filter blur-3xl opacity-50" />
+        <div className="absolute top-1/3 right-1/4 w-96 h-96 rounded-full mix-blend-multiply filter blur-3xl opacity-30" style={{ background: `var(--accent)/5` }} />
       </div>
 
       <div className="max-w-7xl mx-auto">
@@ -48,8 +48,8 @@ export default function Skills() {
                   <ul className="space-y-3">
                     {cat.list.map((skill) => (
                       <li key={skill} className="flex items-center gap-2 group/item">
-                        <span className="w-1.5 h-1.5 bg-primary rounded-full group-hover/item:scale-150 transition-transform" />
-                        <span className="text-white/70 group-hover/item:text-white transition-colors text-sm">{skill}</span>
+                        <span className="w-1.5 h-1.5 rounded-full group-hover/item:scale-150 transition-transform" style={{ backgroundColor: `var(--accent)` }} />
+                        <span className="transition-colors text-sm text-[var(--text-secondary)] group-hover/item:text-[var(--text-primary)]">{skill}</span>
                       </li>
                     ))}
                   </ul>

@@ -1,0 +1,3809 @@
+{
+  "name": "final_with_raw_data20-3-1first_test_wow_new_Full Lead Enrichment Pipeline — Kipplo + Apollo",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -5840,
+        768
+      ],
+      "id": "d4218c36-1290-406c-8c7a-154ffbbbf6b3",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "batchSize": 10,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -5184,
+        768
+      ],
+      "id": "618018d2-f4f4-4cda-9da1-5c0d664e8cd0",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\n\nconst linkedinUrl = (item.company_linkedin_url || \"\")\n  .trim()\n  .replace(/^https?:\\/\\//i, \"\")\n  .replace(/^www\\./i, \"\")\n  .replace(/\\/$/, \"\")\n  .split(\"?\")[0]\n  .toLowerCase();\n\nreturn {\n  json: {\n    input_linkedin_url:  item.company_linkedin_url || \"\",\n    input_domain:        item.domain || item.company_domain || \"\",\n    input_company_name:  item.company_name || \"\",\n    row_number:          item.row_number || $itemIndex + 1,\n    kipplo_company_payload: {\n      params: {\n        size: 1,\n        filters: [\n          {\n            field: \"company_linkedin\",\n            value: linkedinUrl,\n            operator: \"term\"\n          }\n        ]\n      }\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4960,
+        784
+      ],
+      "id": "ab9ba653-9557-4b2d-9ab5-0463b8232e26",
+      "name": "Build Kipplo Company Payload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kipplo.com/api/v1/customer/integrations/173472b6-44d1-4983-8d13-3ce160d0a341/execute",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "cak_ceff9b0c463f99b74eaab54e2dd883e0a0a32360fd28e716"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.kipplo_company_payload) }}",
+        "options": {
+          "timeout": 25000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -4768,
+        784
+      ],
+      "id": "cc75d9d0-1561-4575-a591-7dad7019c720",
+      "name": "Kipplo Company Search",
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-kipplo-company-found",
+              "leftValue": "={{ $json.kipplo_hits }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -4400,
+        784
+      ],
+      "id": "ffe27f96-05fb-4df3-ac53-82db64043ac1",
+      "name": "Kipplo Company Found?"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\n\nconst hits = item?.kipplo_result?.hits?.hits || \n             item?.result?.hits?.hits || [];\n\nconst src = hits.length > 0 ? (hits[0]._source || {}) : {};\nconst company = src.company || {};\n\nreturn {\n  json: {\n    input_linkedin_url:   item.input_linkedin_url || \"\",\n    company_linkedin_url: company.linkedinpage || \n                          item.input_linkedin_url || \"\",\n    company_name:         company.companyname || \n                          item.input_company_name || \"\",\n    domain:               company.domain || \n                          item.input_domain || \"\",\n    industry:             company.industryname || \"\",\n    company_size:         company.headcount_range || \n                          company.headcount_max || \"\",\n    location:             [company.cities, company.states, company.countries]\n                          .filter(Boolean).join(\", \"),\n    company_id:           String(hits[0]?._id || \"\"),\n    data_source:          \"kipplo\",\n    enriched_at:          new Date().toISOString(),\n    row_number: item.row_number || item.params?.row_number || \"\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4192,
+        768
+      ],
+      "id": "5adf65f9-e078-4a70-b962-8abc96146534",
+      "name": "Normalize Kipplo Company"
+    },
+    {
+      "parameters": {
+        "url": "https://api.apollo.io/api/v1/mixed_companies/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key ",
+              "value": "snfTXf9ETU4qy_w_m4kaeg"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "accept",
+              "value": " application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ \"organization_linkedin_urls\": [$json.input_linkedin_url], \"page\": 1, \"per_page\": 1 }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -4784,
+        960
+      ],
+      "id": "a59505b4-6fe0-41d8-9a66-0710b5dd0a51",
+      "name": "Apollo Company Enrich",
+      "disabled": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-apollo-company-found",
+              "leftValue": "={{ ($json.organizations && $json.organizations.length > 0) ? 'found' : 'not_found' }}",
+              "rightValue": "found",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -4624,
+        1008
+      ],
+      "id": "d22dc2a9-290a-46ee-8db6-0b1587e2099e",
+      "name": "Apollo Company Found?",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\n\n// Get original context from Code in JavaScript node\n// which ran before Apollo Company Enrich\nconst context = $('Code in JavaScript').item.json;\n\nconst org = (item.organizations && item.organizations.length > 0)\n            ? item.organizations[0]\n            : {};\n\nreturn {\n  json: {\n    input_linkedin_url:   context.input_linkedin_url || \"\",\n    company_linkedin_url: org.linkedin_url || \n                          context.input_linkedin_url || \"\",\n    company_name:         org.name || \n                          context.input_company_name || \"\",\n    domain:               org.primary_domain || \n                          context.input_domain || \n                          context.apollo_domain || \"\",\n    industry:             org.industry || \"\",\n    company_size:         String(org.estimated_num_employees || \"\"),\n    location:             [org.city, org.state, org.country]\n                          .filter(Boolean).join(\", \"),\n    company_id:           org.id || \"\",\n    apollo_org_id:        org.id || \"\",\n    phone:                org.phone || \"\",\n    revenue:              org.organization_revenue_printed || \"\",\n    founded_year:         String(org.founded_year || \"\"),\n    data_source:          \"apollo\",\n    enriched_at:          new Date().toISOString(),\n    row_number:           context.row_number || \"\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4432,
+        976
+      ],
+      "id": "e39ecdd4-ccf4-4131-83e0-f757f93c1604",
+      "name": "Normalize Apollo Company",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\n\nreturn {\n  json: {\n    company_linkedin_url: item.input_linkedin_url || \n                          item.company_linkedin_url || \"\",\n    company_name:         item.input_company_name || \n                          item.company_name || \"\",\n    domain:               item.input_domain || \"\",\n    reason:               \"Not found in Kipplo\",\n    kipplo_tried:         true,\n    apollo_tried:         false,\n    failed_at:            new Date().toISOString(),\n    row_number:           item.row_number || \"\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4224,
+        1136
+      ],
+      "id": "dfd9d62d-09b2-4e9c-a245-191d9320f1b4",
+      "name": "Company Not Found Record"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg",
+          "mode": "list",
+          "cachedResultName": "company_list_export_1bc8ab7b-8e69-4da5-ad94-50173efbc23d",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 430122782,
+          "mode": "list",
+          "cachedResultName": "unfound_companies",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg/edit#gid=430122782"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "company_linkedin_url": "={{ $json.company_linkedin_url }}",
+            "company_name": "={{ $json.company_name }}",
+            "domain": "={{ $json.domain }}",
+            "reason": "={{ $json.reason }}",
+            "kipplo_tried": "={{ $json.kipplo_tried }}",
+            "apollo_tried": "={{ $json.apollo_tried }}",
+            "failed_at": "={{ $json.failed_at }}"
+          },
+          "matchingColumns": [
+            "company_linkedin_url"
+          ],
+          "schema": [
+            {
+              "id": "company_linkedin_url",
+              "displayName": "company_linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company_name",
+              "displayName": "company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "domain",
+              "displayName": "domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "kipplo_tried",
+              "displayName": "kipplo_tried",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "apollo_tried",
+              "displayName": "apollo_tried",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "failed_at",
+              "displayName": "failed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -4016,
+        1136
+      ],
+      "id": "d096e1b8-2dd7-416c-b602-d0975f68fa0f",
+      "name": "Write Unfound Company",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7k4L0u589gzaur4p",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Truncate raw data and pass through\nconst d = $json;\nreturn {\n  json: {\n    ...d,\n    _truncated: true\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4016,
+        768
+      ],
+      "id": "5f39b6d5-4dd4-46e9-af54-5c18ee301bba",
+      "name": "Pass Company Data"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg",
+          "mode": "list",
+          "cachedResultName": "company_list_export_1bc8ab7b-8e69-4da5-ad94-50173efbc23d",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 452995864,
+          "mode": "list",
+          "cachedResultName": "found_companies",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg/edit#gid=452995864"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "company_id"
+          ],
+          "schema": [
+            {
+              "id": "company_linkedin_url",
+              "displayName": "company_linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company_name",
+              "displayName": "company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "domain",
+              "displayName": "domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "industry",
+              "displayName": "industry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company_size",
+              "displayName": "company_size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company_id",
+              "displayName": "company_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "data_source",
+              "displayName": "data_source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "enriched_at",
+              "displayName": "enriched_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "input_linkedin_url",
+              "displayName": "input_linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "input_domain",
+              "displayName": "input_domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "_truncated",
+              "displayName": "_truncated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "apollo_org_id",
+              "displayName": "apollo_org_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "revenue",
+              "displayName": "revenue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "founded_year",
+              "displayName": "founded_year",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3792,
+        768
+      ],
+      "id": "ff7dd72d-f89b-4712-bf1b-ce337c168457",
+      "name": "Write Found Company",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7k4L0u589gzaur4p",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\n\nfunction cleanLinkedin(url) {\n  if (!url) return \"\";\n  return url\n    .trim()\n    .replace(/^https?:\\/\\//i, \"\")\n    .replace(/^www\\./i, \"\")\n    .replace(/\\/$/, \"\")\n    .split(\"?\")[0]\n    .toLowerCase();\n}\n\nconst linkedinUrl = cleanLinkedin(\n  item.company_linkedin_url || item.input_linkedin_url || \"\"\n);\n\nreturn {\n  json: {\n    ...item,\n    normalized_linkedin_url: linkedinUrl,\n    kipplo_people_payload: {\n      params: {\n        filters: [\n          {\n            field: \"company_linkedin\",\n            operator: \"equals\",\n            value: linkedinUrl\n          },\n          {\n            field: \"seniority\",\n            operator: \"terms\",\n            value: [\"Founder\", \"CEO\", \"CTO\", \"VP\", \"Director\"]\n          }\n        ],\n        page: 1,\n        page_size: 5\n      }\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3024,
+        768
+      ],
+      "id": "9798c316-59a3-45d4-8435-2f8e488b96d4",
+      "name": "Build Kipplo People Payload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kipplo.com/api/v1/customer/integrations/280d9c75-319e-4757-b13c-d8e7cc834fde/execute",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "cak_ceff9b0c463f99b74eaab54e2dd883e0a0a32360fd28e716"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"params\": {{ JSON.stringify($json.kipplo_people_payload.params) }} }",
+        "options": {
+          "timeout": 25000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2832,
+        768
+      ],
+      "id": "4de3e682-7239-4001-9250-532a0203c973",
+      "name": "Kipplo People Search",
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\n\n// bulk_match returns data directly on item, not under item.person\nconst p = item;\n\nconst primaryEmail = p.email || \n                     (p.emails && p.emails.length > 0 \n                      ? p.emails[0].email || p.emails[0] \n                      : \"\") || \"\";\n\nconst phone = (p.phone_numbers && p.phone_numbers.length > 0)\n              ? p.phone_numbers[0].sanitized_number || \"\"\n              : \"\";\n\nreturn {\n  json: {\n    company_linkedin_url: p.organization?.linkedin_url || \"\",\n    company_name:         p.organization?.name || \"\",\n    company_id:           p.organization_id || \"\",\n    domain:               p.organization?.primary_domain || \"\",\n    company_industry:     p.organization?.industry || \"\",\n    company_size:         p.organization?.estimated_num_employees || \"\",\n    company_location:     p.organization?.city || \"\",\n    data_source_company:  \"apollo\",\n    person_name:          p.name || [p.first_name, p.last_name].filter(Boolean).join(\" \") || \"\",\n    title:                p.title || \"\",\n    seniority:            p.seniority || \"\",\n    email:                primaryEmail,\n    all_emails:           JSON.stringify(p.emails || []),\n    phone:                phone,\n    linkedin_url:         p.linkedin_url || \"\",\n    location:             [p.city, p.state, p.country].filter(Boolean).join(\", \"),\n    data_source_person:   \"apollo\",\n    enriched_at:          new Date().toISOString(),\n    row_number:           item.row_number || \"\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2384,
+        1008
+      ],
+      "id": "c457a2ad-9ccb-4a86-bd85-0bd0ff14dc4a",
+      "name": "Normalize Apollo Person",
+      "alwaysOutputData": true,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\n\nreturn {\n  json: {\n    company_linkedin_url: item.company_linkedin_url || \"\",\n    company_name:         item.company_name || \"\",\n    company_id:           item.company_id || \"\",\n    domain:               item.domain || \"\",\n    person_name:          item.person_name || \"\",\n    title:                item.title || \"\",\n    seniority:            item.seniority || \"\",\n    linkedin_url:         item.linkedin_url || \"\",\n    reason:               \"No senior people found in Kipplo\",\n    kipplo_tried:         true,\n    apollo_tried:         false,\n    failed_at:            new Date().toISOString(),\n    row_number:           item.row_number || \"\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1760,
+        1200
+      ],
+      "id": "6da0901a-2cb9-48c3-8bf1-097f698bd7b2",
+      "name": "People Not Found Record"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg",
+          "mode": "list",
+          "cachedResultName": "company_list_export_1bc8ab7b-8e69-4da5-ad94-50173efbc23d",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1059991172,
+          "mode": "list",
+          "cachedResultName": "unfound_people",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg/edit#gid=1059991172"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "company_linkedin_url": "={{ $json.company_linkedin_url }}",
+            "company_name": "={{ $json.company_name }}",
+            "company_id": "={{ $json.company_id }}",
+            "domain": "={{ $json.domain }}",
+            "reason": "={{ $json.reason }}",
+            "kipplo_tried": "={{ $json.kipplo_tried }}",
+            "apollo_tried": "={{ $json.apollo_tried }}",
+            "failed_at": "={{ $json.failed_at }}",
+            "person_name": "={{ $json.person_name }}",
+            "title": "={{ $json.title }}",
+            "seniority": "={{ $json.seniority }}",
+            "linkedin_url": "={{ $json.linkedin_url }}",
+            "row_number": "={{ $json.row_number }}"
+          },
+          "matchingColumns": [
+            "company_linkedin_url"
+          ],
+          "schema": [
+            {
+              "id": "company_linkedin_url",
+              "displayName": "company_linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company_name",
+              "displayName": "company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_id",
+              "displayName": "company_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "domain",
+              "displayName": "domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "person_name",
+              "displayName": "person_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "seniority",
+              "displayName": "seniority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "linkedin_url",
+              "displayName": "linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "kipplo_tried",
+              "displayName": "kipplo_tried",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "apollo_tried",
+              "displayName": "apollo_tried",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "failed_at",
+              "displayName": "failed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1504,
+        1200
+      ],
+      "id": "aaa28ffb-8d29-435c-b45d-405139c29f39",
+      "name": "Write Unfound People",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7k4L0u589gzaur4p",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if-has-email",
+              "leftValue": "={{ $json.email }}",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            },
+            {
+              "id": "f2411ec6-9303-4c63-ba6b-31798b647297",
+              "leftValue": "={{ $json.email.trim() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1584,
+        752
+      ],
+      "id": "d9f7adc9-0d51-4148-991a-29a030eef76a",
+      "name": "Has Email?"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Truncate raw_json fields and finalize found person record\nconst d = $json;\nreturn {\n  json: {\n    company_linkedin_url: d.company_linkedin_url || \"\",\n    company_name:         d.company_name         || \"\",\n    company_id:           d.company_id           || \"\",\n    domain:               d.domain               || \"\",\n    person_name:          d.person_name          || \"\",\n    title:                d.title                || \"\",\n    seniority:            d.seniority            || \"\",\n    email:                d.email                || \"\",\n    all_emails:           (d.all_emails || \"\").substring(0, 500),\n    phone:                d.phone                || \"\",\n    linkedin_url:         d.linkedin_url         || \"\",\n    location:             d.location             || \"\",\n    data_source_person:   d.data_source_person   || \"\",\n    enriched_at:          d.enriched_at          || new Date().toISOString(),\n    kipplo_raw:           d.kipplo_raw           || \"\"  // ← add this\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1360,
+        720
+      ],
+      "id": "b4578587-fbad-4ec0-ad17-d4e6e6cb3016",
+      "name": "Prepare Found Person"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const d = $json;\n\nreturn {\n  json: {\n    company_linkedin_url: d.company_linkedin_url || \"\",\n    company_name:         d.company_name || \"\",\n    company_id:           d.company_id || \"\",\n    person_name:          d.person_name || \"\",\n    title:                d.title || \"\",\n    seniority:            d.seniority || \"\",\n    linkedin_url:         d.linkedin_url || \"\",\n    email_status:         \"not_found\",\n    reason:               \"Person found in Kipplo but no email available\",\n    kipplo_tried:         true,\n    apollo_tried:         false,\n    data_source_person:   d.data_source_person || \"kipplo_enrich\",\n    failed_at:            new Date().toISOString(),\n    row_number:           d.row_number || \"\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1072,
+        992
+      ],
+      "id": "7d3bcc0a-0c29-4454-956e-a6220e61fbaf",
+      "name": "Prepare No-Email Person"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg",
+          "mode": "list",
+          "cachedResultName": "company_list_export_1bc8ab7b-8e69-4da5-ad94-50173efbc23d",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1273424148,
+          "mode": "list",
+          "cachedResultName": "found_people",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg/edit#gid=1273424148"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "company_id": "={{ $json.company_id }}",
+            "company_linkedin_url": "={{ $json.company_linkedin_url }}",
+            "person_name": "={{ $json.person_name }}",
+            "company_name": "={{ $json.company_name }}",
+            "seniority": "={{ $json.seniority }}",
+            "title": "={{ $json.title }}",
+            "email": "={{ $json.email }}",
+            "all_emails": "={{ $json.all_emails }}",
+            "phone": "={{ $json.phone }}",
+            "enriched_at": "={{ $json.enriched_at }}",
+            "data_source_person": "={{ $json.data_source_person }}",
+            "location": "={{ $json.location }}",
+            "linkedin_url": "={{ $json.linkedin_url }}"
+          },
+          "matchingColumns": [
+            "linkedin_url"
+          ],
+          "schema": [
+            {
+              "id": "company_linkedin_url",
+              "displayName": "company_linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_name",
+              "displayName": "company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_id",
+              "displayName": "company_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "person_name",
+              "displayName": "person_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "seniority",
+              "displayName": "seniority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "all_emails",
+              "displayName": "all_emails",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedin_url",
+              "displayName": "linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "data_source_person",
+              "displayName": "data_source_person",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "enriched_at",
+              "displayName": "enriched_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1744,
+        320
+      ],
+      "id": "978461e0-e2ec-4cfc-a0ad-2307b74d3277",
+      "name": "Write Found People",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7k4L0u589gzaur4p",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1059991172,
+          "mode": "list",
+          "cachedResultName": "unfound_people"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "company_linkedin_url": "={{ $json.company_linkedin_url }}",
+            "company_name": "={{ $json.company_name }}",
+            "company_id": "={{ $json.company_id }}",
+            "person_name": "={{ $json.person_name }}",
+            "linkedin_url": "={{ $json.linkedin_url }}",
+            "title": "={{ $json.title }}",
+            "seniority": "={{ $json.seniority }}",
+            "reason": "={{ $json.reason }}",
+            "failed_at": "={{ $json.failed_at }}",
+            "kipplo_tried": "yes",
+            "apollo_tried": "yes"
+          },
+          "matchingColumns": [
+            "linkedin_url"
+          ],
+          "schema": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -848,
+        992
+      ],
+      "id": "63f82969-4ec1-4af1-93ad-20d8923b141d",
+      "name": "Write No-Email People",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7k4L0u589gzaur4p",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const d = $json;\n\nconst dedup_key = d.email?.trim() ||\n                  d.linkedin_url?.trim() ||\n                  (d.person_name + \"_\" + d.company_name)\n                  .toLowerCase().replace(/\\s+/g, \"_\");\n\nreturn {\n  json: {\n    company_linkedin_url: d.company_linkedin_url || \"\",\n    company_name:         d.company_name         || \"\",\n    company_id:           d.company_id           || \"\",\n    domain:               d.domain               || \"\",\n    industry:             d.industry             || d.company_industry || \"\",\n    company_size:         d.company_size         || \"\",\n    company_location:     d.company_location     || \"\",\n    data_source_company:  d.data_source_company  || \"\",\n    person_name:          d.person_name          || \"\",\n    title:                d.title                || \"\",\n    seniority:            d.seniority            || \"\",\n    email:                d.email                || \"\",\n    all_emails:           (d.all_emails || \"\").substring(0, 500),\n    phone:                d.phone                || \"\",\n    person_linkedin_url:  d.linkedin_url         || \"\",\n    person_location:      d.location             || \"\",\n    data_source_person:   d.data_source_person   || \"\",\n    enriched_at:          d.enriched_at          || new Date().toISOString(),\n    dedup_key:            dedup_key,\n    kipplo_raw:           d.kipplo_raw           || \"\"  // ← raw JSON from Kipplo\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1184,
+        720
+      ],
+      "id": "a725820f-f72d-47e8-a59f-44a52c4599fd",
+      "name": "Build Master Lead Record"
+    },
+    {
+      "parameters": {
+        "amount": 0.5
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -16,
+        1424
+      ],
+      "id": "d013e8a0-5037-4c06-9ad2-555d00d03ac6",
+      "name": "Rate Limit Wait",
+      "webhookId": "rate-limit-wait-webhook"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Extract domain from LinkedIn URL as fallback\nconst linkedinUrl = $json.input_linkedin_url || \"\";\nconst companyName = $json.input_company_name || \"\";\n\n// Extract slug from linkedin URL\n// linkedin.com/company/lensa → lensa\nconst slug = linkedinUrl\n  .replace(/https?:\\/\\//i, \"\")\n  .replace(/www\\./i, \"\")\n  .split(\"/company/\")[1]\n  ?.replace(/\\//g, \"\")\n  ?.trim() || \"\";\n\n// Build best-guess domain\nconst guessDomain = slug ? slug + \".com\" : \"\";\n\nreturn {\n  json: {\n    ...$json,\n    apollo_domain: guessDomain,  // lensa.com\n    apollo_slug: slug             // lensa\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4944,
+        960
+      ],
+      "id": "6893bbd3-99b9-497e-b020-9ab478b49fd8",
+      "name": "Code in JavaScript",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  const peopleIds = data.people_ids || [];\n\n  if (peopleIds.length === 0) {\n    results.push({\n      json: {\n        company_linkedin_url: data.company_linkedin_url || \"\",\n        company_name:         data.company_name || \"\",\n        company_id:           data.company_id || \"\",\n        domain:               data.domain || \"\",\n        row_number:           data.row_number || \"\",\n        people_found:         false,\n        reason:               \"No senior people found in Kipplo\"\n      }\n    });\n    continue;\n  }\n\n  for (const personId of peopleIds) {\n    results.push({\n      json: {\n        company_linkedin_url: data.company_linkedin_url || \"\",\n        company_name:         data.company_name || \"\",\n        company_id:           data.company_id || \"\",\n        domain:               data.domain || \"\",\n        row_number:           data.row_number || \"\",\n        person_id:            personId,\n        people_found:         true\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2448,
+        768
+      ],
+      "id": "91ec399f-199e-4b5d-8975-cb667bbba831",
+      "name": "Filter + Normalize People"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const apiResponse = items[i].json;\n  const context = $('Build Kipplo People Payload').all()[i]?.json || {};\n  const hits = apiResponse?.result?.hits?.hits || [];\n\n  const peopleIds = hits.map(h => String(h._source?.peopleid || h._id || \"\"));\n\n  results.push({\n    json: {\n      company_linkedin_url: context.normalized_linkedin_url || \"\",\n      company_name:         context.company_name || \"\",\n      company_id:           context.company_id || \"\",\n      domain:               context.domain || \"\",\n      industry:             context.industry || \"\",\n      company_size:         context.company_size || \"\",\n      location:             context.location || \"\",\n      data_source_company:  context.data_source || \"\",\n      row_number:           context.row_number || \"\",\n      people_ids:           peopleIds,\n      people_count:         peopleIds.length,\n      success:              apiResponse.success,\n      error:                apiResponse.error\n    }\n  });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2640,
+        768
+      ],
+      "id": "e06e5eca-6ea8-4657-a3c8-1b4bbfd46ce3",
+      "name": "Merge People Context1"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\n\n// Pull company data from Code in JavaScript5 \n// since Update row in sheet drops all fields\nconst companyData = $('Code in JavaScript5').item.json;\n\nfunction cleanLinkedin(url) {\n  if (!url) return \"\";\n  return url\n    .trim()\n    .replace(/^https?:\\/\\//i, \"\")\n    .replace(/^www\\./i, \"\")\n    .replace(/\\/$/, \"\")\n    .split(\"?\")[0]\n    .toLowerCase();\n}\n\nconst linkedinUrl = cleanLinkedin(\n  companyData.company_linkedin_url || \n  companyData.input_linkedin_url || \"\"\n);\n\nreturn {\n  json: {\n    // Restore all company fields\n    company_linkedin_url:  companyData.company_linkedin_url || \"\",\n    company_name:          companyData.company_name || \"\",\n    company_id:            companyData.company_id || \"\",\n    domain:                companyData.domain || \"\",\n    industry:              companyData.industry || \"\",\n    company_size:          companyData.company_size || \"\",\n    location:              companyData.location || \"\",\n    data_source:           companyData.data_source || \"\",\n    row_number:            companyData.row_number || \n                           item.row_number || \"\",\n    // Build people payload\n    normalized_linkedin_url: linkedinUrl,\n    kipplo_people_payload: {\n      params: {\n        filters: [\n          {\n            field: \"company_linkedin\",\n            operator: \"equals\",\n            value: linkedinUrl\n          },\n          {\n            field: \"seniority\",\n            operator: \"terms\",\n            value: [\"Founder\", \"CEO\", \"CTO\", \"VP\", \"Director\"]\n          }\n        ],\n        page: 1,\n        page_size: 5\n      }\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3200,
+        768
+      ],
+      "id": "fc51ec52-2a6c-4d7d-93f3-d622d1818afa",
+      "name": "Restore Row Number",
+      "retryOnFail": true,
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const resp = items[i].json;\n  const prev = $('Build Kipplo Company Payload').all()[i]?.json || {};\n\n  const hits = resp?.result?.hits?.hits || [];\n\n  results.push({\n    json: {\n      // Pass original input context\n      input_linkedin_url:  prev.input_linkedin_url || \"\",\n      input_domain:        prev.input_domain || \"\",\n      input_company_name:  prev.input_company_name || \"\",\n      row_number:          prev.row_number || (i + 1),\n\n      // Kipplo result\n      kipplo_result:       resp.result || null,\n      kipplo_hits:         hits.length,\n      kipplo_success:      resp.success || false,\n      kipplo_error:        resp.error || null\n    }\n  });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4576,
+        784
+      ],
+      "id": "287c60ab-7f00-4100-92b2-9b863259ed9d",
+      "name": "Merge Kipplo Context"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kipplo.com/api/v1/customer/integrations/43496595-2946-4275-8a82-0a7ae26a829f/execute",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "cak_ceff9b0c463f99b74eaab54e2dd883e0a0a32360fd28e716"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"params\": {\n    \"filters\": [\n      {\n        \"field\": \"person_id\",\n        \"operator\": \"equals\",\n        \"value\": \"{{ $json.person_id }}\"\n      }\n    ],\n    \"requested_optional_fields\": [\"business_emails\"]\n  }\n}",
+        "options": {
+          "timeout": 25000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1968,
+        752
+      ],
+      "id": "b64a3c2a-8f48-4b1a-b827-ba14057f6c5a",
+      "name": "Kipplo Enrich Person",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\nconst hits = item?.result?.hits?.hits || [];\nconst src = hits.length > 0 ? hits[0]._source || {} : {};\nconst company = src.company || {};\n\nconst emails = src.businessemails || [];\nconst firstEmail = emails.length > 0\n                   ? (emails[0].email || \"\").trim()\n                   : \"\";\nconst phone = src.cellnumbers?.length > 0\n              ? src.cellnumbers[0].phone : \"\";\n\nreturn {\n  json: {\n    company_linkedin_url: item.company_linkedin_url ||\n                          company.linkedinpage || \"\",\n    company_name:         item.company_name ||\n                          company.companyname || \"\",\n    company_id:           item.company_id ||\n                          String(company.companyid || \"\"),\n    domain:               item.domain ||\n                          company.domain || \"\",\n    company_industry:     company.industryname || \"\",\n    company_size:         company.headcount_range || \"\",\n    company_location:     [company.cities, company.states,\n                           company.countries]\n                          .filter(Boolean).join(\", \"),\n    data_source_company:  \"kipplo\",\n    person_name:          src.name || \"\",\n    title:                src.jobtitle || \"\",\n    seniority:            src.seniority || \"\",\n    email:                firstEmail,\n    all_emails:           JSON.stringify(emails),\n    phone:                phone,\n    linkedin_url:         src.linkedinurl || \"\",\n    location:             [src.plcities, src.plstates, src.plcountries]\n                          .filter(Boolean).join(\", \"),\n    data_source_person:   \"kipplo_enrich\",\n    enriched_at:          new Date().toISOString(),\n    row_number:           item.row_number || \"\",\n    kipplo_raw:           JSON.stringify(src)  // ← full raw Kipplo data\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1776,
+        752
+      ],
+      "id": "b2dc36dc-6976-4644-b324-08afc9c46408",
+      "name": "Normalize Enriched Person"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e4727cc6-6023-4d4b-8abe-dc5156f38eac",
+              "leftValue": "={{ $json.people_found }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2240,
+        768
+      ],
+      "id": "3eb4f4a5-ec66-42fb-972c-165faad97bf6",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\n\nconst companyLinkedin = item.company_linkedin_url || \"\";\nconst domain = item.domain || \"\";\n\nif (!domain && !companyLinkedin) {\n  return {\n    json: {\n      ...item,\n      apollo_search_method: \"no_data\",\n      apollo_people_payload: null\n    }\n  };\n}\n\nreturn {\n  json: {\n    ...item,\n    apollo_search_method: \"company_search\",\n    apollo_people_payload: {\n      q_organization_linkedin_profile_url: companyLinkedin,\n      person_seniorities: [\n        \"founder\",\n        \"c_suite\",\n        \"vp\",\n        \"head\",\n        \"director\"\n      ],\n      page: 1,\n      per_page: 5\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3552,
+        1024
+      ],
+      "id": "0a67b014-26e2-48d4-ada6-d7a400ff7260",
+      "name": "Build Apollo Payload",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "fd2adf56-7cd2-4b0f-933a-6f8ba5c304ee",
+              "leftValue": "={{ $json.company_linkedin_url }}",
+              "rightValue": "found",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -3376,
+        1024
+      ],
+      "id": "49d93e53-1eaf-45cf-bb8a-12dc86df5749",
+      "name": "Can Search Apollo",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\n\nfunction buildFullLinkedin(url) {\n  if (!url) return \"\";\n  url = url.trim()\n    .replace(/^https?:\\/\\//i, \"\")\n    .replace(/^www\\./i, \"\")\n    .replace(/\\/$/, \"\")\n    .toLowerCase();\n  return \"https://www.linkedin.com/company/\" + url.split(\"linkedin.com/company/\")[1];\n}\n\nconst companyLinkedin = buildFullLinkedin(\n  item.company_linkedin_url || \"\"\n);\n\nreturn {\n  json: {\n    ...item,\n    apollo_people_payload: {\n      q_organization_linkedin_profile_url: companyLinkedin,\n      person_seniorities: [\n        \"founder\",\n        \"c_suite\",\n        \"vp\",\n        \"head\",\n        \"director\"\n      ],\n      page: 1,\n      per_page: 5\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3184,
+        1008
+      ],
+      "id": "d783ea43-62e2-4753-bb47-6e046d7ff5d6",
+      "name": "Code in JavaScript1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/people/match",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "no9q0mP7IhpltJxCtcQILg"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"linkedin_url\": \"{{ $json.linkedin_url }}\",\n  \"reveal_personal_emails\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2144,
+        1040
+      ],
+      "id": "43a982e4-436e-44be-8c1b-f2a92e627b64",
+      "name": "HTTP Request1",
+      "disabled": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "469e3878-9f71-471b-b4c6-c44567db3840",
+              "leftValue": "={{ $json.email.trim() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1808,
+        1040
+      ],
+      "id": "08e1977c-b525-4810-98ac-2d5f0a0b2f10",
+      "name": "Apollo Person Found?",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\nconst p = item.person || {};\n\nconst primaryEmail = (p.email || \"\").trim();\n\nconst phone = (p.phone_numbers && p.phone_numbers.length > 0)\n              ? p.phone_numbers[0].sanitized_number || \"\"\n              : \"\";\n\nreturn {\n  json: {\n    company_linkedin_url: item.company_linkedin_url || \"\",\n    company_name:         p.organization?.name || item.company_name || \"\",\n    company_id:           p.organization_id || item.company_id || \"\",\n    domain:               item.domain || \"\",\n    company_industry:     item.company_industry || \"\",\n    company_size:         item.company_size || \"\",\n    company_location:     item.company_location || \"\",\n    data_source_company:  item.data_source_company || \"\",\n    person_name:          p.name ||\n                          [p.first_name, p.last_name]\n                          .filter(Boolean).join(\" \") ||\n                          item.person_name || \"\",\n    title:                p.title || item.title || \"\",\n    seniority:            p.seniority || item.seniority || \"\",\n    email:                primaryEmail,\n    all_emails:           JSON.stringify(p.emails || []),\n    phone:                phone,\n    linkedin_url:         p.linkedin_url || \n                          item.linkedin_url || \n                          item.person_linkedin || \"\",  // ← added fallback\n    location:             [p.city, p.state, p.country]\n                          .filter(Boolean).join(\", \"),\n    data_source_person:   \"apollo\",\n    enriched_at:          new Date().toISOString(),\n    row_number:           item.row_number || \"\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2000,
+        1104
+      ],
+      "id": "a0d96759-bc15-4655-aab2-8b443dd29d41",
+      "name": "Code in JavaScript2",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg",
+          "mode": "list",
+          "cachedResultName": "company_list_export_1bc8ab7b-8e69-4da5-ad94-50173efbc23d",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1273424148,
+          "mode": "list",
+          "cachedResultName": "found_people",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Lf3GxQAAn51LOK9J3uF6Yo6938iZXbQLcE50Y6RaQxg/edit#gid=1273424148"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "company_linkedin_url": "={{ $json.company_linkedin_url }}",
+            "company_name": "={{ $json.company_name }}",
+            "company_id": "={{ $json.company_id }}",
+            "email": "={{ $json.email }}",
+            "all_emails": "={{ $json.all_emails }}",
+            "seniority": "={{ $json.seniority }}",
+            "title": "={{ $json.title }}",
+            "person_name": "={{ $json.person_name }}",
+            "phone": "={{ $json.phone }}",
+            "linkedin_url": "={{ $json.linkedin_url }}",
+            "location": "={{ $json.location }}",
+            "data_source_person": "={{ $json.data_source_person }}",
+            "enriched_at": "={{ $json.enriched_at }}"
+          },
+          "matchingColumns": [
+            "linkedin_url"
+          ],
+          "schema": [
+            {
+              "id": "company_linkedin_url",
+              "displayName": "company_linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_name",
+              "displayName": "company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_id",
+              "displayName": "company_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "person_name",
+              "displayName": "person_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "seniority",
+              "displayName": "seniority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "all_emails",
+              "displayName": "all_emails",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedin_url",
+              "displayName": "linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "data_source_person",
+              "displayName": "data_source_person",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "enriched_at",
+              "displayName": "enriched_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1392,
+        944
+      ],
+      "id": "5d684f20-90bf-4b61-b748-48f0aa56e4a1",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7k4L0u589gzaur4p",
+          "name": "Google Sheets account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/mixed_people/api_search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q_organization_linkedin_urls[]",
+              "value": "={{ $json.company_linkedin_url }}"
+            },
+            {
+              "name": "person_seniorities[]",
+              "value": "director"
+            },
+            {
+              "name": "per_page",
+              "value": "5"
+            },
+            {
+              "name": "page",
+              "value": "1"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "no9q0mP7IhpltJxCtcQILg"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -3024,
+        1008
+      ],
+      "id": "ea95c536-f011-49fd-a725-ec95f03671ad",
+      "name": "HTTP Request",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/people/bulk_match",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "x-api-key",
+              "value": "no9q0mP7IhpltJxCtcQILg"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2704,
+        1008
+      ],
+      "id": "188a6c52-1fb7-4d4f-ae68-80206ceab4fb",
+      "name": "HTTP Request2",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const people = $json.people;\n\nreturn {\n  json: {\n    details: people.map(p => ({ id: p.id })),\n    reveal_personal_emails: false,\n    reveal_phone_number: false\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2864,
+        1008
+      ],
+      "id": "7569e3ee-613d-4ed6-bf99-56fdb55059f6",
+      "name": "Code in JavaScript3",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "matches",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -2544,
+        1008
+      ],
+      "id": "6fb712b7-e313-4af8-9d01-f81432b45ae0",
+      "name": "Split Out",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\n\n// ── Initialise ────────────────────────────────────────────────────────────────\nif (!staticData.masterLeads) staticData.masterLeads = [];\nif (!staticData.batchCount)  staticData.batchCount  = 0;\n\n// ── Increment batch counter every loop run ────────────────────────────────────\nstaticData.batchCount += 1;\n\n// ── Dedup set from already-accumulated leads ───────────────────────────────────\nconst seen = new Set(\n  staticData.masterLeads.map(r => r.dedup_key).filter(Boolean)\n);\n\nconst items = $input.all();\n\nfor (const item of items) {\n  const d = item.json;\n\n  if (!d.company_linkedin_url || !d.company_name || !d.person_name) continue;\n  if (d.reason) continue;\n\n  const key = d.email?.trim() ||\n              d.linkedin_url?.trim() ||\n              (d.person_name + \"_\" + d.company_name)\n              .toLowerCase().replace(/\\s+/g, \"_\");\n\n  if (!key || seen.has(key)) continue;\n  seen.add(key);\n\n  staticData.masterLeads.push({\n    company_linkedin_url: d.company_linkedin_url || \"\",\n    company_name:         d.company_name         || \"\",\n    company_id:           d.company_id           || \"\",\n    domain:               d.domain               || \"\",\n    industry:             d.company_industry     || \"\",\n    company_size:         d.company_size         || \"\",\n    company_location:     d.company_location     || \"\",\n    data_source_company:  d.data_source_company  || \"\",\n    person_name:          d.person_name          || \"\",\n    title:                d.title                || \"\",\n    seniority:            d.seniority            || \"\",\n    email:                d.email                || \"\",\n    all_emails:           (d.all_emails || \"\").substring(0, 500),\n    phone:                d.phone                || \"\",\n    person_linkedin_url:  d.linkedin_url         || \"\",\n    person_location:      d.location             || \"\",\n    data_source_person:   d.data_source_person   || \"\",\n    enriched_at:          d.enriched_at          || \"\",\n    dedup_key:            key,\n    kipplo_raw:           d.kipplo_raw || \"\"\n  });\n}\n\nconst isLastBatch  = $node[\"Loop Over Items\"].context.noItemsLeft;\n// ── Checkpoint every 10 loops OR on last batch ────────────────────────────────\nconst isCheckpoint = (staticData.batchCount % 10 === 0) || isLastBatch;\n\n// Reset counter after last batch so next workflow run starts from 0\nif (isLastBatch) staticData.batchCount = 0;\n\nconsole.log(\n  `Batch #${staticData.batchCount} | Accumulated: ${staticData.masterLeads.length}` +\n  ` | Checkpoint: ${isCheckpoint} | Last: ${isLastBatch}`\n);\n\nreturn [{ json: {\n  status:            'accumulated',\n  count:             staticData.masterLeads.length,\n  is_last_batch:     isLastBatch,\n  should_checkpoint: isCheckpoint\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -992,
+        720
+      ],
+      "id": "73b57259-d3c6-4c73-b6ce-f7233cc629c9",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const seen = new Set();\nconst items = $input.all();\n\nconst unique = items.filter(item => {\n  const key = item.json.company_linkedin_url?.trim() || \n              item.json.company_id?.trim() || \"\";\n  if (!key || seen.has(key)) return false;\n  seen.add(key);\n  return true;\n});\n\nreturn unique;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3600,
+        768
+      ],
+      "id": "25c378e2-d283-4022-a2e2-48fa452c8fcf",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "15yxq8KN9z6kWOnCY7Oc-LJIvVr9JoIAyX4dplpyfeT8",
+          "mode": "list",
+          "cachedResultName": "Sample_list_enrichment",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15yxq8KN9z6kWOnCY7Oc-LJIvVr9JoIAyX4dplpyfeT8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Company List",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15yxq8KN9z6kWOnCY7Oc-LJIvVr9JoIAyX4dplpyfeT8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.row_number }}",
+            "status": "done"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "_id",
+              "displayName": "_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_linkedin_id",
+              "displayName": "company_linkedin_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_linkedin_url",
+              "displayName": "company_linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_universalname",
+              "displayName": "company_universalname",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_name",
+              "displayName": "company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_description",
+              "displayName": "company_description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_specialities",
+              "displayName": "company_specialities",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_industries",
+              "displayName": "company_industries",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_logo",
+              "displayName": "company_logo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_employeecount",
+              "displayName": "company_employeecount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_employeecountrange",
+              "displayName": "company_employeecountrange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_description",
+              "displayName": "job_description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_headquarter_country",
+              "displayName": "company_headquarter_country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_headquarter_city",
+              "displayName": "company_headquarter_city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_headquarter_street1",
+              "displayName": "company_headquarter_street1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_headquarter_street2",
+              "displayName": "company_headquarter_street2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_headquarter_postalcode",
+              "displayName": "company_headquarter_postalcode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_headquarter_geographicarea",
+              "displayName": "company_headquarter_geographicarea",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_location",
+              "displayName": "company_location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_posting_id",
+              "displayName": "job_posting_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_posting_url",
+              "displayName": "job_posting_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "applies",
+              "displayName": "applies",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "views",
+              "displayName": "views",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "formatted_employment_status",
+              "displayName": "formatted_employment_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_title",
+              "displayName": "job_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source_domain",
+              "displayName": "source_domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "formatted_experience_level",
+              "displayName": "formatted_experience_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_location",
+              "displayName": "job_location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_apply_url",
+              "displayName": "company_apply_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "formatted_job_functions",
+              "displayName": "formatted_job_functions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compensation_type",
+              "displayName": "compensation_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "currency_code",
+              "displayName": "currency_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "max_salary",
+              "displayName": "max_salary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "min_salary",
+              "displayName": "min_salary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pay_period",
+              "displayName": "pay_period",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "original_posted_time",
+              "displayName": "original_posted_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "listed_at",
+              "displayName": "listed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "expire_at",
+              "displayName": "expire_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "applicant_tracking_system",
+              "displayName": "applicant_tracking_system",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "formatted_industries",
+              "displayName": "formatted_industries",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "industries",
+              "displayName": "industries",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_state",
+              "displayName": "job_state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "work_remote_allowed",
+              "displayName": "work_remote_allowed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_functions",
+              "displayName": "job_functions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "benefits_data_source",
+              "displayName": "benefits_data_source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_source",
+              "displayName": "content_source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "employment_status",
+              "displayName": "employment_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "workplace_types",
+              "displayName": "workplace_types",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "inserted_at",
+              "displayName": "inserted_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "input_url",
+              "displayName": "input_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eCampaign Fit Score",
+              "displayName": "eCampaign Fit Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recommended Service",
+              "displayName": "Recommended Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Fit Details",
+              "displayName": "Fit Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reasoning",
+              "displayName": "Reasoning",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3408,
+        768
+      ],
+      "id": "fed279d5-9ae9-4341-860d-678f3a5a4221",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7k4L0u589gzaur4p",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -4160,
+        1328
+      ],
+      "id": "398e6b7a-b828-4510-b36b-0e75968f22c2",
+      "name": "Wait3",
+      "webhookId": "3c370103-928c-44a2-9be8-fbb1530360f3",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2688,
+        1344
+      ],
+      "id": "0986222d-4889-41f2-abf3-564f331420f6",
+      "name": "Wait4",
+      "webhookId": "30399e4e-05bb-4c0e-835d-b816e0e9f03b",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "15yxq8KN9z6kWOnCY7Oc-LJIvVr9JoIAyX4dplpyfeT8",
+          "mode": "list",
+          "cachedResultName": "Sample_list_enrichment",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15yxq8KN9z6kWOnCY7Oc-LJIvVr9JoIAyX4dplpyfeT8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Company List",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15yxq8KN9z6kWOnCY7Oc-LJIvVr9JoIAyX4dplpyfeT8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "company_linkedin_url": "={{ $json.company_linkedin_url }}",
+            "status": "done"
+          },
+          "matchingColumns": [
+            "company_linkedin_url"
+          ],
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "_id",
+              "displayName": "_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_linkedin_id",
+              "displayName": "company_linkedin_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_linkedin_url",
+              "displayName": "company_linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company_universalname",
+              "displayName": "company_universalname",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_name",
+              "displayName": "company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_description",
+              "displayName": "company_description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_specialities",
+              "displayName": "company_specialities",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_industries",
+              "displayName": "company_industries",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_logo",
+              "displayName": "company_logo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_employeecount",
+              "displayName": "company_employeecount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_employeecountrange",
+              "displayName": "company_employeecountrange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_description",
+              "displayName": "job_description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_headquarter_country",
+              "displayName": "company_headquarter_country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_headquarter_city",
+              "displayName": "company_headquarter_city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_headquarter_street1",
+              "displayName": "company_headquarter_street1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_headquarter_street2",
+              "displayName": "company_headquarter_street2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_headquarter_postalcode",
+              "displayName": "company_headquarter_postalcode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_headquarter_geographicarea",
+              "displayName": "company_headquarter_geographicarea",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_location",
+              "displayName": "company_location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_posting_id",
+              "displayName": "job_posting_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_posting_url",
+              "displayName": "job_posting_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "applies",
+              "displayName": "applies",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "views",
+              "displayName": "views",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "formatted_employment_status",
+              "displayName": "formatted_employment_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_title",
+              "displayName": "job_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source_domain",
+              "displayName": "source_domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "formatted_experience_level",
+              "displayName": "formatted_experience_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_location",
+              "displayName": "job_location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_apply_url",
+              "displayName": "company_apply_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "formatted_job_functions",
+              "displayName": "formatted_job_functions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "compensation_type",
+              "displayName": "compensation_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "currency_code",
+              "displayName": "currency_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "max_salary",
+              "displayName": "max_salary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "min_salary",
+              "displayName": "min_salary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pay_period",
+              "displayName": "pay_period",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "original_posted_time",
+              "displayName": "original_posted_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "listed_at",
+              "displayName": "listed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "expire_at",
+              "displayName": "expire_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "applicant_tracking_system",
+              "displayName": "applicant_tracking_system",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "formatted_industries",
+              "displayName": "formatted_industries",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "industries",
+              "displayName": "industries",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_state",
+              "displayName": "job_state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "work_remote_allowed",
+              "displayName": "work_remote_allowed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_functions",
+              "displayName": "job_functions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "benefits_data_source",
+              "displayName": "benefits_data_source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "content_source",
+              "displayName": "content_source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "employment_status",
+              "displayName": "employment_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "workplace_types",
+              "displayName": "workplace_types",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "inserted_at",
+              "displayName": "inserted_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "input_url",
+              "displayName": "input_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "eCampaign Fit Score",
+              "displayName": "eCampaign Fit Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recommended Service",
+              "displayName": "Recommended Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Fit Details",
+              "displayName": "Fit Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reasoning",
+              "displayName": "Reasoning",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3808,
+        1136
+      ],
+      "id": "77fd64f7-5717-4675-9108-1c5448e26fb8",
+      "name": "Update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7k4L0u589gzaur4p",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 0.5
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -672,
+        992
+      ],
+      "id": "7bafe6b5-b8d9-472f-85a3-d463eeabbebc",
+      "name": "Wait5",
+      "webhookId": "3447a1e5-d870-4148-9a3b-9127606af81c"
+    },
+    {
+      "parameters": {
+        "options": {
+          "headerRow": true
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -384,
+        528
+      ],
+      "id": "7d66dc45-b28a-4241-be0f-4872bf1f98b4",
+      "name": "Convert to File",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "fileId": {
+          "__rl": true,
+          "value": "1ilvK1cyY9b--bmFnK-2YNv3kFiaU4dPp",
+          "mode": "list",
+          "cachedResultName": "master_leads.csv"
+        },
+        "changeFileContent": true,
+        "newUpdatedFileName": "master_leads.csv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -256,
+        640
+      ],
+      "id": "6b039a54-d79b-4093-bd94-7d5b07cd6ae6",
+      "name": "Update file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "49C3dpGHOqi6sXXi",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1ilvK1cyY9b--bmFnK-2YNv3kFiaU4dPp",
+          "mode": "list",
+          "cachedResultName": "master_leads.csv"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -704,
+        64
+      ],
+      "id": "6807f61a-bf64-4751-ae5a-cb54f7422e82",
+      "name": "Download file1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "49C3dpGHOqi6sXXi",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst newLeads = staticData.masterLeads || [];\nstaticData.masterLeads = []; // ← clear immediately after reading\n\n// ── Canonical column order ────────────────────────────────────────────────────\nconst COLUMNS = [\n  'company_linkedin_url','company_name','company_id','domain',\n  'industry','company_size','company_location','data_source_company',\n  'person_name','title','seniority','email','all_emails',\n  'phone','person_linkedin_url','person_location',\n  'data_source_person','enriched_at','dedup_key','kipplo_raw'\n];\n\n// ── Helper: strip BOM, enforce column order ───────────────────────────────────\nfunction cleanRow(raw) {\n  const cleaned = {};\n  for (const [key, val] of Object.entries(raw)) {\n    const clean_key = key.replace(/[\\ufeff\\ufffe]/g, '').trim();\n    if (cleaned[clean_key] && !val) continue;\n    cleaned[clean_key] = val || '';\n  }\n  const out = {};\n  for (const col of COLUMNS) { out[col] = cleaned[col] || ''; }\n  return out;\n}\n\n// ── Read existing rows from Parse Old CSV (predecessor node) ──────────────────\nconst existingRows = $input.all()\n  .map(item => cleanRow(item.json))\n  .filter(row => row.company_name); // skip _empty sentinel rows\n\nconsole.log('Existing rows from Drive:', existingRows.length, '| New leads:', newLeads.length);\n\nif (newLeads.length === 0 && existingRows.length === 0) {\n  return [{ json: { status: 'no_leads' } }];\n}\n\n// ── Clean new leads ───────────────────────────────────────────────────────────\nconst cleanedNew = newLeads.map(r => cleanRow(r));\n\n// ── Deduplicate: new leads take priority over existing ────────────────────────\nconst newKeys = new Set(cleanedNew.map(r => r.dedup_key).filter(Boolean));\n\nconst merged = [\n  ...existingRows.filter(r => !r.dedup_key || !newKeys.has(r.dedup_key)),\n  ...cleanedNew\n];\n\nconsole.log('Merged total:', merged.length);\nreturn merged.map(r => ({ json: r }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        464
+      ],
+      "id": "619a2597-4740-4f03-b214-63a965afd213",
+      "name": "merge code"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "886ee2fe-9047-46e7-a468-57473d7f21c5",
+              "leftValue": "={{ $json.should_checkpoint }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -816,
+        720
+      ],
+      "id": "a191bfbd-7a48-4256-b209-d16946144ac1",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        224
+      ],
+      "id": "20dcfec7-1c95-426a-b9af-b0121b1ab427",
+      "name": "Parse Old CSV",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseCSV(csvText) {\n  if (!csvText || !csvText.trim()) return [];\n  const text = csvText.replace(/^\\ufeff/, '').trim();\n  const lines = text.split('\\n').map(l => l.replace(/\\r$/, ''));\n  if (lines.length < 2) return [];\n\n  const headers = splitCSVLine(lines[0]).map(h => h.trim());\n\n  const rows = [];\n  for (let i = 1; i < lines.length; i++) {\n    const line = lines[i].trim();\n    if (!line) continue;\n    const values = splitCSVLine(line);\n    const row = {};\n    headers.forEach((h, idx) => { row[h] = (values[idx] || '').trim(); });\n    if (row.dedup_key || row.company_name) rows.push(row);\n  }\n  return rows;\n}\n\nfunction splitCSVLine(line) {\n  const values = [];\n  let current = '', inQuotes = false;\n  for (let i = 0; i < line.length; i++) {\n    const ch = line[i];\n    if (ch === '\"') { inQuotes = !inQuotes; }\n    else if (ch === ',' && !inQuotes) { values.push(current); current = ''; }\n    else { current += ch; }\n  }\n  values.push(current);\n  return values;\n}\n\nlet rows = [];\ntry {\n  const inputItem = $input.first();\n  const binary = inputItem?.binary || {};\n  const binaryKey = Object.keys(binary)[0];\n  const binaryEntry = binary[binaryKey];\n\n  if (binaryEntry?.data) {\n    const csvText = Buffer.from(binaryEntry.data, 'base64').toString('utf-8');\n    rows = parseCSV(csvText);\n    console.log('Parsed rows:', rows.length);\n  } else {\n    console.log('Empty file — starting fresh');\n  }\n} catch (e) {\n  console.log('CSV parse error:', e.message);\n}\n\nif (rows.length === 0) return [{ json: { _empty: true } }];\nreturn rows.map(r => ({ json: r }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "394d7ff0-eb14-44f2-9008-723c5abe76e7",
+      "name": "Code in JavaScript6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a297d659-d69f-4952-b11f-da1412691c0b",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "pending",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        -5408,
+        768
+      ],
+      "id": "1c231c1d-f2b5-4517-827e-7822f2bb8295",
+      "name": "Filter",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "15yxq8KN9z6kWOnCY7Oc-LJIvVr9JoIAyX4dplpyfeT8",
+          "mode": "list",
+          "cachedResultName": "Sample_list_enrichment",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15yxq8KN9z6kWOnCY7Oc-LJIvVr9JoIAyX4dplpyfeT8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Company List",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15yxq8KN9z6kWOnCY7Oc-LJIvVr9JoIAyX4dplpyfeT8/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -5568,
+        768
+      ],
+      "id": "6eccf11e-e3c6-47c8-9acd-1d90761dd30b",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7k4L0u589gzaur4p",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Build Kipplo Company Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Kipplo Company Payload": {
+      "main": [
+        [
+          {
+            "node": "Kipplo Company Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kipplo Company Search": {
+      "main": [
+        [
+          {
+            "node": "Merge Kipplo Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kipplo Company Found?": {
+      "main": [
+        [
+          {
+            "node": "Normalize Kipplo Company",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Company Not Found Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Kipplo Company": {
+      "main": [
+        [
+          {
+            "node": "Pass Company Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo Company Enrich": {
+      "main": [
+        [
+          {
+            "node": "Apollo Company Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo Company Found?": {
+      "main": [
+        [
+          {
+            "node": "Normalize Apollo Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Apollo Company": {
+      "main": [
+        [
+          {
+            "node": "Pass Company Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Company Not Found Record": {
+      "main": [
+        [
+          {
+            "node": "Write Unfound Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pass Company Data": {
+      "main": [
+        [
+          {
+            "node": "Write Found Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Found Company": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Kipplo People Payload": {
+      "main": [
+        [
+          {
+            "node": "Kipplo People Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kipplo People Search": {
+      "main": [
+        [
+          {
+            "node": "Merge People Context1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "People Not Found Record": {
+      "main": [
+        [
+          {
+            "node": "Write Unfound People",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Email?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Found Person",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare No-Email Person",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Found Person": {
+      "main": [
+        [
+          {
+            "node": "Build Master Lead Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare No-Email Person": {
+      "main": [
+        [
+          {
+            "node": "Write No-Email People",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Master Lead Record": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write No-Email People": {
+      "main": [
+        [
+          {
+            "node": "Wait5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Apollo Company Enrich",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter + Normalize People": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge People Context1": {
+      "main": [
+        [
+          {
+            "node": "Filter + Normalize People",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Row Number": {
+      "main": [
+        [
+          {
+            "node": "Build Kipplo People Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Kipplo Context": {
+      "main": [
+        [
+          {
+            "node": "Kipplo Company Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kipplo Enrich Person": {
+      "main": [
+        [
+          {
+            "node": "Normalize Enriched Person",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Enriched Person": {
+      "main": [
+        [
+          {
+            "node": "Has Email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Kipplo Enrich Person",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "People Not Found Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Apollo Payload": {
+      "main": [
+        [
+          {
+            "node": "Can Search Apollo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Can Search Apollo": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Apollo Person Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo Person Found?": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Build Master Lead Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Normalize Apollo Person",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Unfound People": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Unfound Company": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Restore Row Number",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Update file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update file": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file1": {
+      "main": [
+        [
+          {
+            "node": "Parse Old CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "merge code": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Download file1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rate Limit Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Old CSV": {
+      "main": [
+        [
+          {
+            "node": "merge code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait5": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ea2e3505-40e6-4a56-8fd6-85c1ab9ae6b2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dc2ddcf46e07ce4b5c83b48c893f6ae8d62c38911f76f1529f0530071ca5c0d6"
+  },
+  "id": "R6oDbCWl3zIDKssB",
+  "tags": []
+}
+
+
+

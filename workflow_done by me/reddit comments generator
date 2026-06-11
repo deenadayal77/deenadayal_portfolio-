@@ -1,0 +1,916 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2
+            }
+          ]
+        }
+      },
+      "id": "c30191b2-560f-4e98-9bb9-b053ea6ad352",
+      "name": "0. Run Every 2 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        6672,
+        -912
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {}
+      },
+      "id": "58599c38-759d-4fff-a6d6-dafcba35bf84",
+      "name": "1. Fetch F5Bot Emails (Last 2 Hours)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        6912,
+        -912
+      ],
+      "webhookId": "eda63b66-7fa2-4e2c-9fc0-089b93112540",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gHy8yqh3dEYDThuY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.snippet || '' }}",
+              "rightValue": "Reddit Comments",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.snippet || '' }}",
+              "rightValue": "Reddit Posts",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ba179c06-97de-4cb7-95a9-2a224c604e5e",
+      "name": "2. Has Reddit Mention?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        7152,
+        -912
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\nconst seen = new Set();\n\nfor (const item of items) {\n  const snippet = item.json.snippet || '';\n  const subject = item.json.Subject || item.json.subject || '';\n\n  const regex = /Reddit (?:Comments|Posts) \\(\\/r\\/([\\w]+)\\/\\):\\s*(.+?)\\s+by\\s+(\\w+)/gi;\n  let match;\n\n  const kwRegex = /Keyword[s]?:\\s*[\"\\u201c]([^\"\\u201d]+)[\"\\u201d]/gi;\n  let kwMatch;\n  const keywords = [];\n  while ((kwMatch = kwRegex.exec(snippet)) !== null) {\n    keywords.push(...kwMatch[1].split(',').map(k => k.trim()));\n  }\n  if (keywords.length === 0) {\n    const subjKw = subject.replace(/F5Bot found something[:\\s]*/i, '').trim();\n    if (subjKw) keywords.push(...subjKw.split(',').map(k => k.trim()));\n  }\n\n  let keywordIdx = 0;\n  while ((match = regex.exec(snippet)) !== null) {\n    const subreddit = match[1];\n    let postTitle = match[2].trim();\n    const author = match[3];\n\n    postTitle = postTitle.replace(/\\s*-\\s*\\w?\\.{3}$/, '').trim();\n    const dotIdx = postTitle.indexOf('. ');\n    if (dotIdx > 5) {\n      const afterDot = postTitle.substring(dotIdx + 2);\n      if (afterDot[0] && afterDot[0] === afterDot[0].toLowerCase()) {\n        postTitle = postTitle.substring(0, dotIdx);\n      }\n    }\n\n    const dedupeKey = subreddit + '|' + author;\n    if (seen.has(dedupeKey)) continue;\n    seen.add(dedupeKey);\n\n    const searchQuery = encodeURIComponent(postTitle.substring(0, 100));\n    results.push({\n      json: {\n        subreddit: 'r/' + subreddit,\n        post_title_from_f5bot: postTitle,\n        author_from_f5bot: author,\n        keyword: keywords[keywordIdx] || keywords[0] || '',\n        search_url: 'https://www.reddit.com/r/' + subreddit + '/search.json?q=' + searchQuery + '&restrict_sr=on&sort=new&limit=5',\n        email_subject: subject\n      }\n    });\n    keywordIdx++;\n  }\n}\n\nif (results.length === 0) throw new Error('No Reddit mentions parsed from F5Bot snippets.');\nreturn results;"
+      },
+      "id": "d532e6c3-760b-4c58-94e2-00b3c13e5a1e",
+      "name": "3. Parse F5Bot Snippets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7392,
+        -912
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.search_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; DemandNxt/1.0)"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 2000
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "c6f0d4a1-ab2e-4a85-8305-9024cd1db559",
+      "name": "4. Search Reddit for Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        7632,
+        -912
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\nconst prevData = $('3. Parse F5Bot Snippets').item.json;\n\nconst posts = item.data?.children || [];\n\nif (posts.length === 0) {\n  return {\n    json: {\n      post_permalink: '', post_fetch_url: '',\n      title: prevData.post_title_from_f5bot || '',\n      subreddit: prevData.subreddit || '',\n      author: prevData.author_from_f5bot || '',\n      score: 0, num_comments: 0,\n      keyword: prevData.keyword || '',\n      search_failed: true\n    }\n  };\n}\n\nlet bestPost = posts[0].data;\nfor (const p of posts) {\n  if (p.data.author === prevData.author_from_f5bot) { bestPost = p.data; break; }\n}\n\nconst permalink = bestPost.permalink || '';\nconst postUrl = permalink ? 'https://www.reddit.com' + permalink.replace(/\\/$/, '') + '.json?limit=10&sort=top' : '';\n\nreturn {\n  json: {\n    post_permalink: permalink,\n    post_fetch_url: postUrl,\n    title: bestPost.title || prevData.post_title_from_f5bot || '',\n    subreddit: bestPost.subreddit_name_prefixed || prevData.subreddit || '',\n    author: bestPost.author || prevData.author_from_f5bot || '',\n    score: bestPost.score || 0,\n    num_comments: bestPost.num_comments || 0,\n    keyword: prevData.keyword || '',\n    search_failed: false\n  }\n};"
+      },
+      "id": "312bbe37-9a87-432b-bdae-55f23fae1cee",
+      "name": "5. Find Best Matching Post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7872,
+        -912
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "has-url",
+              "leftValue": "={{ $json.post_fetch_url }}",
+              "rightValue": "https://",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2c7954cd-5fe9-46cf-8098-fda7783a7a61",
+      "name": "6. Post Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        8112,
+        -912
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.post_fetch_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; DemandNxt/1.0)"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 2000
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "0343eff6-ec8c-4af9-a008-24f6c08bd562",
+      "name": "7. Fetch Post + Comments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        8352,
+        -912
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Run Once for All Items mode — process pairs of items\n// Reddit returns [post_listing, comments_listing] per fetch\n// Node 7 outputs them as separate items: 0,1 = post1; 2,3 = post2; etc.\n\nconst items = $input.all();\nconst prevItems = $('6. Post Found?').all();\nconst results = [];\n\nfor (let i = 0; i < items.length; i += 2) {\n  const postItem = items[i]?.json;\n  const commentsItem = items[i + 1]?.json;\n  const prevIdx = Math.floor(i / 2);\n  const prev = prevItems[prevIdx]?.json || {};\n\n  const postData = postItem?.data?.children?.[0]?.data || {};\n  const commentsChildren = commentsItem?.data?.children || [];\n\n  const realComments = [];\n  for (const c of commentsChildren) {\n    if (c.kind !== 't1') continue;\n    if (c.data.stickied) continue;\n    if ((c.data.author || '').toLowerCase() === 'automoderator') continue;\n    realComments.push(c.data);\n  }\n  realComments.sort((a, b) => (b.score || 0) - (a.score || 0));\n\n  let topComment = '';\n  let topCommentScore = 0;\n  if (realComments.length > 0) {\n    topComment = (realComments[0].body || '').substring(0, 500);\n    topCommentScore = realComments[0].score || 0;\n  }\n\n  const permalink = postData.permalink || prev.post_permalink || '';\n  const subreddit = postData.subreddit_name_prefixed || prev.subreddit || '';\n  const nc = postData.num_comments || prev.num_comments || 0;\n  let commentRange = '0-5 (fresh, low competition)';\n  if (nc > 50) commentRange = '50+ (crowded)';\n  else if (nc > 20) commentRange = '20-50 (active thread)';\n  else if (nc > 5) commentRange = '5-20 (some traction)';\n\n  results.push({\n    json: {\n      title: postData.title || prev.title || '',\n      body: (postData.selftext || '').substring(0, 500),\n      num_comments: nc,\n      comment_range: commentRange,\n      top_comment: topComment,\n      top_comment_score: topCommentScore,\n      subreddit: subreddit,\n      post_url: permalink ? 'https://www.reddit.com' + permalink : '',\n      score: postData.score || 0,\n      author: postData.author || prev.author || '',\n      keyword: prev.keyword || '',\n      scraped_at: new Date().toISOString()\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "7d7041e0-4a19-46fe-804b-10a4dbb34303",
+      "name": "8. Parse Post + Comments",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8592,
+        -912
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1AR_pBeRPCXYm2oI2Shi72BNd38tWpsthlT_ppLyZQc8",
+          "mode": "list",
+          "cachedResultName": "reddit_text_extraction",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AR_pBeRPCXYm2oI2Shi72BNd38tWpsthlT_ppLyZQc8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AR_pBeRPCXYm2oI2Shi72BNd38tWpsthlT_ppLyZQc8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "body",
+              "displayName": "body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "num_comments",
+              "displayName": "num_comments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "top_comment",
+              "displayName": "top_comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subreddit",
+              "displayName": "subreddit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "post_url",
+              "displayName": "post_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author",
+              "displayName": "author",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "scraped_at",
+              "displayName": "scraped_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "top_comment_score",
+              "displayName": "top_comment_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "comment_range",
+              "displayName": "comment_range",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "keyword",
+              "displayName": "keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "8b1b188f-acfd-4a83-8bf0-9d22d4032539",
+      "name": "9. Save Raw Data",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        8832,
+        -912
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5rWlRH2roTC3udj1",
+          "name": "Google Sheets account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\n\nconst systemPrompt = 'You are a Reddit reply strategist for a B2B sales/data intelligence founder named Preetham Poovani.\\n\\nCONTEXT ABOUT PREETHAM:\\n- Founder of a B2B data/prospecting company (early stage, ~$3K MRR)\\n- Competes with Apollo, ZoomInfo, Lusha, Cognism, Seamless.ai\\n- Building an AI-powered GTM platform (data + sequencing in one tool)\\n- Account is new/low-karma so he CANNOT mention his company yet\\n- Goal is to be genuinely helpful and build credibility over 8 weeks\\n- Deep knowledge of: B2B data quality, email deliverability, prospecting workflows, outbound sales operations, cold email, data enrichment, and the economics of contact data\\n\\nRULES FOR REPLIES:\\n1. NEVER mention his company name (Kipplo) or link to any website\\n2. Sound like a practitioner sharing experience, not a salesperson\\n3. Be specific — use numbers, percentages, concrete examples from real-world experience\\n4. If the thread is a tool comparison, be balanced — mention pros AND cons of competitors honestly\\n5. End with a question when natural (drives engagement)\\n6. Keep replies under 150 words unless the thread warrants longer\\n7. Match the tone of the subreddit (r/sales is casual and direct, r/SaaS is more analytical, r/coldemail is tactical)\\n8. No AI-isms: no \"Great question!\", no \"Here\\'s the thing:\", no em dashes, no rule-of-three patterns, no \"In today\\'s landscape\", no \"It\\'s not about X, it\\'s about Y\"\\n9. Write like a real person typing on a keyboard. Normal sentence casing.\\n10. If sharing a genuine negative experience with a competitor\\'s product, that\\'s high-value content on Reddit\\n11. Never start with complimenting the post or poster\\n12. Never use bullet points in Reddit replies — write in natural flowing text\\n13. Be slightly opinionated. Safe takes get ignored on Reddit.\\n14. If you can politely correct bad advice already in the thread, do it — that earns the most karma\\n\\nTONE CALIBRATION:\\nTone level 3 = balanced\\n\\nRESPONSE FORMAT — Return valid JSON only, no markdown, no backticks, no preamble:\\n{\\n  \"angles\": [\\n    { \"name\": \"Short angle name\", \"description\": \"1-2 sentence description\", \"recommended\": true or false, \"draft\": \"Full draft reply\" }\\n  ],\\n  \"recommended_reason\": \"Why this angle is best\",\\n  \"avoid\": \"One thing NOT to say\",\\n  \"karma_potential\": \"low or medium or high\",\\n  \"karma_reasoning\": \"1 sentence why\"\\n}\\n\\nAlways provide exactly 3 angles. Mark exactly 1 as recommended.';\n\nconst userMessage = 'REDDIT POST TO ANALYZE:\\n\\nTitle: ' + item.title + '\\n' + (item.body ? 'Body: ' + item.body : '(no body text)') + '\\n\\nSubreddit: ' + item.subreddit + '\\nExisting comments: ' + item.comment_range + '\\nTone level: 3 (Balanced)\\n' + (item.top_comment ? 'Top comment: ' + item.top_comment : 'No top comment.') + '\\nKeyword: ' + (item.keyword || 'unknown') + '\\n\\nGenerate 3 reply angles with full drafts. Return ONLY valid JSON.';\n\nreturn {\n  json: {\n    ...item,\n    groq_generate_body: {\n      model: 'llama-3.3-70b-versatile',\n      messages: [\n        { role: 'system', content: systemPrompt },\n        { role: 'user', content: userMessage }\n      ],\n      temperature: 0.9,\n      max_tokens: 2500,\n      response_format: { type: 'json_object' }\n    }\n  }\n};"
+      },
+      "id": "09c1c9f0-ac66-4898-bf17-f75e071f9ebf",
+      "name": "10. Build AI Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        9072,
+        -912
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_GROQ_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.groq_generate_body }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 10000
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "c09c3fed-8515-4388-b54e-f6279c71c4e0",
+      "name": "11. Groq - Generate Angles",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        9312,
+        -912
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\nconst rawText = item.choices?.[0]?.message?.content || '';\n\nif (!rawText.trim()) return { json: { error: 'Empty response', skip: true } };\n\nlet cleaned = rawText.replace(/```json\\s*|```/g, '').trim();\nconst fb = cleaned.indexOf('{');\nconst lb = cleaned.lastIndexOf('}');\nif (fb === -1 || lb === -1) return { json: { error: 'No JSON', skip: true } };\ncleaned = cleaned.slice(fb, lb + 1);\n\nconst parsed = JSON.parse(cleaned);\nconst angles = parsed.angles || [];\nconst recIdx = angles.findIndex(a => a.recommended);\nconst recommended = recIdx >= 0 ? angles[recIdx] : angles[0] || {};\n\nconst prevData = $('10. Build AI Prompt').item.json;\n\nconst humanizerSystem = 'You are a writing editor that removes AI-generated patterns from Reddit replies. Remove: em dashes, rule of three, negative parallelisms, copula avoidance, AI vocabulary (additionally, crucial, delve, enhance, foster, garner, highlight, intricate, landscape, pivotal, showcase, tapestry, testament, underscore, vibrant, leverage, streamline, robust), sycophantic openers, significance inflation, false ranges, synonym cycling, formulaic hedging, generic conclusions, boldface, bullet points, emojis, inline headers with colons. Preserve: core message, specific numbers, tone, questions, opinions. Add soul: vary rhythm, keep opinions, allow imperfections. Use normal sentence casing. Return ONLY the rewritten reply text.';\n\nreturn {\n  json: {\n    title: prevData.title || '',\n    subreddit: prevData.subreddit || '',\n    post_url: prevData.post_url || '',\n    num_comments: prevData.num_comments || 0,\n    top_comment: prevData.top_comment || '',\n    keyword: prevData.keyword || '',\n    angle_1_name: angles[0]?.name || '', angle_1_draft: angles[0]?.draft || '',\n    angle_2_name: angles[1]?.name || '', angle_2_draft: angles[1]?.draft || '',\n    angle_3_name: angles[2]?.name || '', angle_3_draft: angles[2]?.draft || '',\n    recommended_angle: recommended.name || '',\n    recommended_draft: recommended.draft || '',\n    karma_potential: parsed.karma_potential || 'medium',\n    karma_reasoning: parsed.karma_reasoning || '',\n    avoid: parsed.avoid || '',\n    recommended_reason: parsed.recommended_reason || '',\n    groq_humanize_body: {\n      model: 'llama-3.1-8b-instant',\n      messages: [\n        { role: 'system', content: humanizerSystem },\n        { role: 'user', content: 'Rewrite this Reddit reply to remove AI patterns. Use normal sentence casing.\\n\\n' + (recommended.draft || '') }\n      ],\n      temperature: 0.7,\n      max_tokens: 1000\n    }\n  }\n};"
+      },
+      "id": "9155b877-158a-424d-9bf3-6d013bb90537",
+      "name": "12. Extract Recommended Angle",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        9552,
+        -912
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_GROQ_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.groq_humanize_body }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 3000
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 20000
+        }
+      },
+      "id": "2da042ed-fa1b-4d6b-893f-c319c6697955",
+      "name": "13. Groq - Humanize Draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        9792,
+        -912
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item.json;\nconst prevData = $('12. Extract Recommended Angle').item.json;\n\nconst humanizedReply = (item.choices?.[0]?.message?.content || '').trim() || prevData.recommended_draft || '';\n\nreturn {\n  json: {\n    title: prevData.title || '',\n    subreddit: prevData.subreddit || '',\n    post_url: prevData.post_url || '',\n    num_comments: prevData.num_comments || 0,\n    top_comment: prevData.top_comment || '',\n    keyword: prevData.keyword || '',\n    angle_1_name: prevData.angle_1_name || '', angle_1_draft: prevData.angle_1_draft || '',\n    angle_2_name: prevData.angle_2_name || '', angle_2_draft: prevData.angle_2_draft || '',\n    angle_3_name: prevData.angle_3_name || '', angle_3_draft: prevData.angle_3_draft || '',\n    recommended_angle: prevData.recommended_angle || '',\n    recommended_draft_raw: prevData.recommended_draft || '',\n    humanized_reply: humanizedReply,\n    karma_potential: prevData.karma_potential || '',\n    karma_reasoning: prevData.karma_reasoning || '',\n    avoid: prevData.avoid || '',\n    recommended_reason: prevData.recommended_reason || '',\n    generated_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "69daded2-a747-4e49-8aaf-9e1fc609c103",
+      "name": "14. Prepare Final Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        10032,
+        -912
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1AR_pBeRPCXYm2oI2Shi72BNd38tWpsthlT_ppLyZQc8",
+          "mode": "list",
+          "cachedResultName": "reddit_text_extraction",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AR_pBeRPCXYm2oI2Shi72BNd38tWpsthlT_ppLyZQc8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1484099614,
+          "mode": "list",
+          "cachedResultName": "final_output",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AR_pBeRPCXYm2oI2Shi72BNd38tWpsthlT_ppLyZQc8/edit#gid=1484099614"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subreddit",
+              "displayName": "subreddit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "post_url",
+              "displayName": "post_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "num_comments",
+              "displayName": "num_comments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "top_comment",
+              "displayName": "top_comment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "angle_1_name",
+              "displayName": "angle_1_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "angle_1_draft",
+              "displayName": "angle_1_draft",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "angle_2_name",
+              "displayName": "angle_2_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "angle_2_draft",
+              "displayName": "angle_2_draft",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "angle_3_name",
+              "displayName": "angle_3_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "angle_3_draft",
+              "displayName": "angle_3_draft",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recommended_angle",
+              "displayName": "recommended_angle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recommended_draft_raw",
+              "displayName": "recommended_draft_raw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "humanized_reply",
+              "displayName": "humanized_reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "karma_potential",
+              "displayName": "karma_potential",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "karma_reasoning",
+              "displayName": "karma_reasoning",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avoid",
+              "displayName": "avoid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recommended_reason",
+              "displayName": "recommended_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "keyword",
+              "displayName": "keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "94850d31-05b1-417e-b44b-7b4eb484cdaa",
+      "name": "15. Save Generated Replies",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        10272,
+        -912
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5rWlRH2roTC3udj1",
+          "name": "Google Sheets account 6"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "0. Run Every 2 Hours": {
+      "main": [
+        [
+          {
+            "node": "1. Fetch F5Bot Emails (Last 2 Hours)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Fetch F5Bot Emails (Last 2 Hours)": {
+      "main": [
+        [
+          {
+            "node": "2. Has Reddit Mention?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Has Reddit Mention?": {
+      "main": [
+        [
+          {
+            "node": "3. Parse F5Bot Snippets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Parse F5Bot Snippets": {
+      "main": [
+        [
+          {
+            "node": "4. Search Reddit for Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Search Reddit for Post": {
+      "main": [
+        [
+          {
+            "node": "5. Find Best Matching Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Find Best Matching Post": {
+      "main": [
+        [
+          {
+            "node": "6. Post Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Post Found?": {
+      "main": [
+        [
+          {
+            "node": "7. Fetch Post + Comments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. Fetch Post + Comments": {
+      "main": [
+        [
+          {
+            "node": "8. Parse Post + Comments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. Parse Post + Comments": {
+      "main": [
+        [
+          {
+            "node": "9. Save Raw Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9. Save Raw Data": {
+      "main": [
+        [
+          {
+            "node": "10. Build AI Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10. Build AI Prompt": {
+      "main": [
+        [
+          {
+            "node": "11. Groq - Generate Angles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11. Groq - Generate Angles": {
+      "main": [
+        [
+          {
+            "node": "12. Extract Recommended Angle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12. Extract Recommended Angle": {
+      "main": [
+        [
+          {
+            "node": "13. Groq - Humanize Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "13. Groq - Humanize Draft": {
+      "main": [
+        [
+          {
+            "node": "14. Prepare Final Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14. Prepare Final Data": {
+      "main": [
+        [
+          {
+            "node": "15. Save Generated Replies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "2e15d69fa091c1c59076842af7b723197b0bf6b09c266aacecd6f7f68d2ea90b"
+  }
+}

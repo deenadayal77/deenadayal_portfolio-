@@ -1,0 +1,312 @@
+{
+  "name": "half_SendGrid → Bifurcate → Excel → Drive Folder + Email",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "SendGrid CSV Upload",
+        "formDescription": "Upload a SendGrid 7-day activity CSV to generate campaign reports.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "CSV File",
+              "fieldType": "file",
+              "acceptFileTypes": ".csv",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Report Label",
+              "placeholder": "e.g. Mar30_Apr6"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "57e7906d-3366-4b95-a940-9f8ffc13e923",
+      "name": "Upload CSV",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        5184,
+        -480
+      ],
+      "webhookId": "79ecae26-aa66-468f-bd14-27848f1972b0"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst items = $input.all();\nconst item = items[0];\nconst binaryKey = Object.keys(item.binary)[0];\nconst buf = await this.helpers.getBinaryDataBuffer(0, binaryKey);\nif (buf.length >= 2 && buf[0] === 0x1f && buf[1] === 0x8b) {\n  throw new Error('Gzipped files not supported. Please upload an uncompressed .csv');\n}\nlet text = buf.toString('utf-8');\nif (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);\nconst label = items[0].json['Report Label'] || new Date().toISOString().slice(0, 10);\nreturn [{ json: { csvText: text, dateLabel: label } }];\n"
+      },
+      "id": "53feefb1-381d-47bf-a4be-da3dafb03565",
+      "name": "Extract CSV Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5424,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst { csvText, dateLabel } = $input.first().json;\n\nfunction parseCSV(text) {\n  const rows = []; let i = 0;\n  while (i < text.length) {\n    const row = [];\n    while (i < text.length) {\n      let v = '';\n      if (text[i] === '\"') {\n        i++;\n        while (i < text.length) {\n          if (text[i] === '\"') { if (text[i+1] === '\"') { v += '\"'; i += 2; } else { i++; break; } }\n          else { v += text[i]; i++; }\n        }\n      } else {\n        while (i < text.length && text[i] !== ',' && text[i] !== '\\n' && text[i] !== '\\r') { v += text[i]; i++; }\n      }\n      row.push(v);\n      if (i >= text.length || text[i] === '\\n' || text[i] === '\\r') break;\n      if (text[i] === ',') i++;\n    }\n    if (text[i] === '\\r') i++;\n    if (text[i] === '\\n') i++;\n    if (row.length > 1 || (row.length === 1 && row[0].trim() !== '')) rows.push(row);\n  }\n  return rows;\n}\n\nconst rows = parseCSV(csvText);\nif (rows.length < 2) throw new Error('CSV has no data rows');\nconst hdr = rows[0].map(h => h.trim());\nconst ci = {};\nhdr.forEach((h, idx) => ci[h] = idx);\n\n/* Pass 1a: message_id -> singlesend mapping */\nconst msgMap = {};\nfor (let r = 1; r < rows.length; r++) {\n  const row = rows[r];\n  const mid = (row[ci['message_id']] || '').trim();\n  const ua = (row[ci['unique_args']] || '').trim();\n  if (!mid || !ua || ua === '{}') continue;\n  try {\n    const obj = JSON.parse(ua);\n    if (obj.singlesend_id) msgMap[mid] = { id: obj.singlesend_id, name: obj.singlesend_name || '' };\n  } catch(e) {}\n}\n\n/* Pass 1b: message_id -> {subject, from} from ALL rows */\nconst midMeta = {};\nfor (let r = 1; r < rows.length; r++) {\n  const row = rows[r];\n  const mid = (row[ci['message_id']] || '').trim();\n  if (!mid) continue;\n  const subj = (row[ci['subject']] || '').trim();\n  const frm = (row[ci['from']] || '').trim();\n  if (!midMeta[mid]) midMeta[mid] = {};\n  if (subj && !midMeta[mid].subject) midMeta[mid].subject = subj;\n  if (frm && !midMeta[mid].from) midMeta[mid].from = frm;\n}\n\n/* Pass 2: assign rows — get singlesend_name, extract client prefix, group by prefix */\nconst clientGroups = {};\nconst headerLine = hdr.join(',');\n\nfor (let r = 1; r < rows.length; r++) {\n  const row = rows[r];\n  const mid = (row[ci['message_id']] || '').trim();\n  let ssName = '';\n\n  /* Get singlesend_name for this row */\n  const ua = (row[ci['unique_args']] || '').trim();\n  if (ua && ua !== '{}') {\n    try {\n      const obj = JSON.parse(ua);\n      if (obj.singlesend_name) ssName = obj.singlesend_name;\n      if (!obj.singlesend_id && !(mid && msgMap[mid])) continue; /* no singlesend = warmup, skip */\n      if (!ssName && obj.singlesend_id && msgMap[mid]) ssName = msgMap[mid].name;\n    } catch(e) {}\n  }\n  if (!ssName && mid && msgMap[mid]) ssName = msgMap[mid].name;\n  if (!ssName) continue; /* warmup — skip */\n\n  /* Extract client prefix: text before the first \" - \" */\n  const dashIdx = ssName.indexOf(' - ');\n  const clientId = dashIdx > 0 ? ssName.substring(0, dashIdx).trim() : ssName.trim();\n\n  if (!clientGroups[clientId]) {\n    clientGroups[clientId] = { name: clientId, ssNames: new Set(), rows: [] };\n  }\n  clientGroups[clientId].ssNames.add(ssName);\n  clientGroups[clientId].rows.push(row);\n}\n\n/* Build output: one item per client group */\nconst results = [];\nfor (const [clientId, group] of Object.entries(clientGroups)) {\n  /* Build campaign name from client prefix + count of singlesend_ids */\n  const ssCount = group.ssNames.size;\n  const campaignName = clientId + ' (' + ssCount + ' campaigns)';\n\n  const cleanName = clientId\n    .replace(/[\\\\/:*?\"<>|']/g, '')\n    .replace(/[\\s]+/g, '_')\n    .replace(/_+/g, '_')\n    .replace(/^_|_$/g, '')\n    .substring(0, 60);\n  const fileName = 'SendGrid_Report_' + cleanName + '.xlsx';\n\n  /* Serialize CSV with subject/from enriched */\n  const csvLines = [headerLine];\n  for (const row of group.rows) {\n    const mid = (row[ci['message_id']] || '').trim();\n    const meta = midMeta[mid] || {};\n    const enriched = [...row];\n    if (ci['subject'] !== undefined && !enriched[ci['subject']].trim() && meta.subject) enriched[ci['subject']] = meta.subject;\n    if (ci['from'] !== undefined && !enriched[ci['from']].trim() && meta.from) enriched[ci['from']] = meta.from;\n    csvLines.push(enriched.map(c => {\n      if (c.includes(',') || c.includes('\"') || c.includes('\\n')) return '\"' + c.replace(/\"/g, '\"\"') + '\"';\n      return c;\n    }).join(','));\n  }\n\n  results.push({\n    json: {\n      singlesendId: clientId,\n      campaignName: campaignName,\n      xlsxFile: fileName,\n      csvContent: csvLines.join('\\n'),\n      rows: group.rows.length,\n      dateLabel,\n      singlesendCount: ssCount,\n      singlesendNames: [...group.ssNames]\n    }\n  });\n}\n\nif (results.length === 0) throw new Error('No campaigns found — all rows may be warmup emails');\nreturn results;\n"
+      },
+      "id": "22b11652-cbb7-487b-baf8-a5cf9f35b775",
+      "name": "Bifurcate by singlesend_id",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5664,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\n/* CRC32 */\nconst crcT = new Uint32Array(256);\nfor (let i = 0; i < 256; i++) { let c = i; for (let j = 0; j < 8; j++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; crcT[i] = c; }\nfunction crc32(buf) { let c = 0xFFFFFFFF; for (let i = 0; i < buf.length; i++) c = crcT[(c ^ buf[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }\n\n/* STORE ZIP */\nfunction makeZip(files) {\n  const locals = [], centrals = []; let offset = 0;\n  for (const f of files) {\n    const nameB = Buffer.from(f.name, 'utf-8');\n    const raw = Buffer.isBuffer(f.data) ? f.data : Buffer.from(f.data, 'utf-8');\n    const crc = crc32(raw);\n    const lh = Buffer.alloc(30 + nameB.length);\n    lh.writeUInt32LE(0x04034b50,0); lh.writeUInt16LE(20,4); lh.writeUInt16LE(0,6);\n    lh.writeUInt16LE(0,8); lh.writeUInt16LE(0,10); lh.writeUInt16LE(0,12);\n    lh.writeUInt32LE(crc,14); lh.writeUInt32LE(raw.length,18); lh.writeUInt32LE(raw.length,22);\n    lh.writeUInt16LE(nameB.length,26); lh.writeUInt16LE(0,28); nameB.copy(lh,30);\n    locals.push(Buffer.concat([lh, raw]));\n    const ch = Buffer.alloc(46 + nameB.length);\n    ch.writeUInt32LE(0x02014b50,0); ch.writeUInt16LE(20,4); ch.writeUInt16LE(20,6);\n    ch.writeUInt16LE(0,8); ch.writeUInt16LE(0,10); ch.writeUInt16LE(0,12); ch.writeUInt16LE(0,14);\n    ch.writeUInt32LE(crc,16); ch.writeUInt32LE(raw.length,20); ch.writeUInt32LE(raw.length,24);\n    ch.writeUInt16LE(nameB.length,28); ch.writeUInt16LE(0,30); ch.writeUInt16LE(0,32);\n    ch.writeUInt16LE(0,34); ch.writeUInt32LE(0,38); ch.writeUInt32LE(offset,42); nameB.copy(ch,46);\n    centrals.push(ch); offset += lh.length + raw.length;\n  }\n  const cd = Buffer.concat(centrals);\n  const eocd = Buffer.alloc(22);\n  eocd.writeUInt32LE(0x06054b50,0); eocd.writeUInt16LE(0,4); eocd.writeUInt16LE(0,6);\n  eocd.writeUInt16LE(files.length,8); eocd.writeUInt16LE(files.length,10);\n  eocd.writeUInt32LE(cd.length,12); eocd.writeUInt32LE(offset,16); eocd.writeUInt16LE(0,20);\n  return Buffer.concat([...locals, cd, eocd]);\n}\n\n/* XML */\nfunction esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}\nfunction colRef(c){let s='';c++;while(c>0){c--;s=String.fromCharCode(65+(c%26))+s;c=Math.floor(c/26);}return s;}\nfunction numFmt(n){return n.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g,',');}\nfunction S(v,s){return{v,_s:s};}\n\nfunction mkSheet(rows,cw,merges){\n  let x='<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>';\n  x+='<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">';\n  if(cw&&cw.length){x+='<cols>';cw.forEach((w,i)=>{x+='<col min=\"'+(i+1)+'\" max=\"'+(i+1)+'\" width=\"'+w+'\" customWidth=\"1\"/>';});x+='</cols>';}\n  x+='<sheetData>';\n  rows.forEach((row,ri)=>{x+='<row r=\"'+(ri+1)+'\">';row.forEach((cell,ci)=>{if(cell===null||cell===undefined)return;const ref=colRef(ci)+(ri+1);let sa='',val=cell;if(typeof cell==='object'&&cell._s!==undefined){sa=' s=\"'+cell._s+'\"';val=cell.v;}x+='<c r=\"'+ref+'\"'+sa+' t=\"inlineStr\"><is><t>'+esc(val==null?'':val)+'</t></is></c>';});x+='</row>';});\n  x+='</sheetData>';\n  if(merges&&merges.length){x+='<mergeCells count=\"'+merges.length+'\">';merges.forEach(m=>{x+='<mergeCell ref=\"'+m+'\"/>';});x+='</mergeCells>';}\n  x+='</worksheet>';return x;\n}\n\nfunction mkBarChart(title,cats,sa){\n  const co=['2E75B6','C00000','FFC000','70AD47','5B9BD5','ED7D31'];\n  let x='<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>';\n  x+='<c:chartSpace xmlns:c=\"http://schemas.openxmlformats.org/drawingml/2006/chart\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">';\n  x+='<c:date1904 val=\"0\"/><c:lang val=\"en-US\"/><c:roundedCorners val=\"1\"/><c:style val=\"2\"/>';\n  x+='<c:chart><c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr/></a:pPr><a:r><a:rPr lang=\"en-US\"/><a:t>'+esc(title)+'</a:t></a:r></a:p></c:rich></c:tx><c:layout/><c:overlay val=\"1\"/></c:title>';\n  x+='<c:autoTitleDeleted val=\"0\"/><c:plotArea><c:layout/><c:barChart><c:barDir val=\"col\"/><c:grouping val=\"clustered\"/><c:varyColors val=\"1\"/>';\n  sa.forEach((s,si)=>{\n    x+='<c:ser><c:idx val=\"'+si+'\"/><c:order val=\"'+si+'\"/>';\n    x+='<c:spPr><a:solidFill><a:srgbClr val=\"'+co[si%co.length]+'\"/></a:solidFill><a:ln><a:prstDash val=\"solid\"/></a:ln></c:spPr>';\n    x+='<c:invertIfNegative val=\"1\"/>';\n    x+='<c:cat><c:strRef><c:f>dummy</c:f><c:strCache><c:ptCount val=\"'+cats.length+'\"/>';\n    cats.forEach((c,ci)=>{x+='<c:pt idx=\"'+ci+'\"><c:v>'+esc(c)+'</c:v></c:pt>';});\n    x+='</c:strCache></c:strRef></c:cat>';\n    x+='<c:val><c:numRef><c:f>dummy</c:f><c:numCache><c:formatCode>General</c:formatCode><c:ptCount val=\"1\"/>';\n    x+='<c:pt idx=\"0\"><c:v>'+s.values[0]+'</c:v></c:pt>';\n    x+='</c:numCache></c:numRef></c:val></c:ser>';\n  });\n  x+='<c:axId val=\"1\"/><c:axId val=\"2\"/></c:barChart>';\n  x+='<c:catAx><c:axId val=\"1\"/><c:scaling><c:orientation val=\"minMax\"/></c:scaling><c:delete val=\"0\"/><c:axPos val=\"b\"/><c:crossAx val=\"2\"/></c:catAx>';\n  x+='<c:valAx><c:axId val=\"2\"/><c:scaling><c:orientation val=\"minMax\"/></c:scaling><c:delete val=\"0\"/><c:axPos val=\"l\"/><c:crossAx val=\"1\"/></c:valAx>';\n  x+='</c:plotArea><c:legend><c:legendPos val=\"b\"/><c:overlay val=\"0\"/></c:legend><c:plotVisOnly val=\"1\"/></c:chart></c:chartSpace>';\n  return x;\n}\n\nfunction mkDrawing(n){\n  let x='<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>';\n  x+='<xdr:wsDr xmlns:xdr=\"http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\">';\n  const positions=[[3,2],[12,2],[3,22],[12,22],[3,42]];\n  for(let i=0;i<n;i++){\n    const col=positions[i]?positions[i][0]:3;\n    const row=positions[i]?positions[i][1]:2+i*20;\n    x+='<xdr:oneCellAnchor><xdr:from><xdr:col>'+col+'</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>'+row+'</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>';\n    x+='<xdr:ext cx=\"5040000\" cy=\"3600000\"/>';\n    x+='<xdr:graphicFrame macro=\"\"><xdr:nvGraphicFramePr><xdr:cNvPr id=\"'+(i+2)+'\" name=\"Chart '+(i+1)+'\"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr>';\n    x+='<xdr:xfrm><a:off x=\"0\" y=\"0\"/><a:ext cx=\"0\" cy=\"0\"/></xdr:xfrm>';\n    x+='<a:graphic><a:graphicData uri=\"http://schemas.openxmlformats.org/drawingml/2006/chart\">';\n    x+='<c:chart xmlns:c=\"http://schemas.openxmlformats.org/drawingml/2006/chart\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" r:id=\"rId'+(i+1)+'\"/>';\n    x+='</a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:oneCellAnchor>';\n  }\n  x+='</xdr:wsDr>';return x;\n}\n\nfunction mkXlsx(sheets,charts){\n  const nc=charts?charts.length:0;const files=[];\n  let ct='<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/>';\n  sheets.forEach((_,i)=>{ct+='<Override PartName=\"/xl/worksheets/sheet'+(i+1)+'.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>';});\n  ct+='<Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/><Override PartName=\"/xl/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml\"/>';\n  for(let i=0;i<nc;i++)ct+='<Override PartName=\"/xl/charts/chart'+(i+1)+'.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.drawingml.chart+xml\"/>';\n  if(nc>0)ct+='<Override PartName=\"/xl/drawings/drawing1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.drawing+xml\"/>';\n  ct+='</Types>';files.push({name:'[Content_Types].xml',data:ct});\n  files.push({name:'_rels/.rels',data:'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>'});\n  let wb='<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><sheets>';\n  sheets.forEach((s,i)=>{wb+='<sheet name=\"'+esc(s.name)+'\" sheetId=\"'+(i+1)+'\" r:id=\"rId'+(i+1)+'\"/>';});wb+='</sheets></workbook>';files.push({name:'xl/workbook.xml',data:wb});\n  let wr='<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">';\n  sheets.forEach((_,i)=>{wr+='<Relationship Id=\"rId'+(i+1)+'\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet'+(i+1)+'.xml\"/>';});\n  wr+='<Relationship Id=\"rId'+(sheets.length+1)+'\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/></Relationships>';\n  files.push({name:'xl/_rels/workbook.xml.rels',data:wr});\n  files.push({name:'xl/styles.xml',data:'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><fonts count=\"4\"><font><sz val=\"11\"/><name val=\"Calibri\"/></font><font><b/><sz val=\"11\"/><color rgb=\"FFFFFFFF\"/><name val=\"Calibri\"/></font><font><b/><sz val=\"11\"/><name val=\"Calibri\"/></font><font><sz val=\"10\"/><name val=\"Calibri\"/></font></fonts><fills count=\"3\"><fill><patternFill patternType=\"none\"/></fill><fill><patternFill patternType=\"gray125\"/></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FF4472C4\"/></patternFill></fill></fills><borders count=\"1\"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellXfs count=\"5\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/><xf numFmtId=\"0\" fontId=\"1\" fillId=\"2\" borderId=\"0\" applyFont=\"1\" applyFill=\"1\"/><xf numFmtId=\"0\" fontId=\"2\" fillId=\"0\" borderId=\"0\" applyFont=\"1\"/><xf numFmtId=\"0\" fontId=\"3\" fillId=\"0\" borderId=\"0\" applyAlignment=\"1\"><alignment wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"2\" fillId=\"0\" borderId=\"0\" applyFont=\"1\"/></cellXfs></styleSheet>'});\n  sheets.forEach((s,i)=>{files.push({name:'xl/worksheets/sheet'+(i+1)+'.xml',data:s.xml});});\n  if(nc>0){\n    files.push({name:'xl/worksheets/_rels/sheet1.xml.rels',data:'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing\" Target=\"../drawings/drawing1.xml\"/></Relationships>'});\n    files.push({name:'xl/drawings/drawing1.xml',data:mkDrawing(nc)});\n    let dr='<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">';\n    for(let i=0;i<nc;i++)dr+='<Relationship Id=\"rId'+(i+1)+'\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart\" Target=\"../charts/chart'+(i+1)+'.xml\"/>';\n    dr+='</Relationships>';files.push({name:'xl/drawings/_rels/drawing1.xml.rels',data:dr});\n    charts.forEach((ch,i)=>{files.push({name:'xl/charts/chart'+(i+1)+'.xml',data:mkBarChart(ch.title,ch.cats,ch.series)});});\n    const si=files.findIndex(f=>f.name==='xl/worksheets/sheet1.xml');\n    if(si>=0)files[si].data=files[si].data.replace('</worksheet>','<drawing r:id=\"rId1\"/></worksheet>');\n  }\n  return makeZip(files);\n}\n\n/* CSV parser */\nfunction parseCSV(text){const rows=[];let i=0;while(i<text.length){const row=[];while(i<text.length){let v='';if(text[i]==='\"'){i++;while(i<text.length){if(text[i]==='\"'){if(text[i+1]==='\"'){v+='\"';i+=2;}else{i++;break;}}else{v+=text[i];i++;}}}else{while(i<text.length&&text[i]!==','&&text[i]!=='\\n'&&text[i]!=='\\r'){v+=text[i];i++;}}row.push(v);if(i>=text.length||text[i]==='\\n'||text[i]==='\\r')break;if(text[i]===',')i++;}if(text[i]==='\\r')i++;if(text[i]==='\\n')i++;if(row.length>1||(row.length===1&&row[0].trim()!==''))rows.push(row);}return rows;}\nfunction toEpoch(d){\n  if(!d)return 0;\n  d=String(d).trim();\n  if(!d)return 0;\n  /* Try ISO format first: 2026-03-23 11:31:12 or 2026-03-23 11:31:12.000 */\n  let t;\n  if(/^\\d{4}-\\d{2}-\\d{2}[T ]/.test(d)){\n    t=new Date(d.replace(' ','T')+(d.includes('Z')?'':'Z'));\n  } else {\n    /* Fallback: let Date() parse US/UK/other formats (3/23/2026 11:31:11 AM etc) */\n    t=new Date(d);\n  }\n  if(isNaN(t))return 0;\n  return Math.floor(t.getTime()/1000);\n}\nfunction fmtDt(d){if(!d)return '';return d.trim().replace(/\\.000$/,'');}\nfunction fmtDiff(s){if(s<60)return s+'s';if(s<3600)return Math.floor(s/60)+'m '+(s%60)+'s';return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m';}\n\nconst items = $input.all();\nconst results = [];\nfor (const item of items) {\n  const { csvContent, campaignName, xlsxFile, dateLabel, singlesendId } = item.json;\n  const rows = parseCSV(csvContent);\n  if (rows.length < 2) { results.push(item); continue; }\n  const hdr = rows[0].map(h => h.trim()); const ci = {}; hdr.forEach((h,idx) => ci[h] = idx);\n  const g = (row,col) => (row[ci[col]] || '').trim();\n\n  const delTimes = {};\n  for (let r=1;r<rows.length;r++){const row=rows[r];if(g(row,'event')!=='delivered')continue;const em=g(row,'email'),mid=g(row,'message_id')||em,rk=em+'|'+mid,ts=toEpoch(g(row,'processed'));if(!delTimes[rk]||ts<delTimes[rk].ts)delTimes[rk]={ts,dt:g(row,'processed'),row};}\n\n  const delK=new Set(),bncK=new Set(),defK=new Set(),drpK=new Set(),unsK=new Set();\n  const deliveredRows=[],bounceRows=[],deferredRows=[],droppedRows=[],unsubRows=[];\n  for(let r=1;r<rows.length;r++){const row=rows[r],ev=g(row,'event'),em=g(row,'email'),mid=g(row,'message_id')||em,rk=em+'|'+mid;\n    if(ev==='delivered'){delK.add(rk);deliveredRows.push({rk,row});}\n    else if(ev==='bounce'){bncK.add(rk);bounceRows.push({rk,row});}\n    else if(ev==='deferred'){defK.add(rk);deferredRows.push({rk,row});}\n    else if(ev==='dropped'){drpK.add(rk);droppedRows.push({rk,row});}\n    else if(ev==='unsubscribe'||ev==='group_unsubscribe'){unsK.add(rk);unsubRows.push({rk,row});}}\n\n  const softK=new Set([...defK].filter(k=>!delK.has(k)&&!bncK.has(k)));\n  const postDelBounce=[...bncK].filter(k=>delK.has(k)).length;\n  const defThenBounce=[...bncK].filter(k=>defK.has(k)&&!delK.has(k)).length;\n\n  const totalOpens=[],totalClicks=[],uOpenMap={},uClickMap={},botOpenMap={},botClickMap={};\n  for(let r=1;r<rows.length;r++){const row=rows[r],ev=g(row,'event'),em=g(row,'email'),mid=g(row,'message_id')||em,rk=em+'|'+mid,ts=toEpoch(g(row,'processed'));\n    if(ev==='open'){const del=delTimes[rk];if(!del)continue;const diff=ts-del.ts;if(diff<=60){if(!botOpenMap[rk])botOpenMap[rk]={rk,row,diff,delDt:del.dt,rule:'Open \\u226460s'};}else{totalOpens.push({rk,row,diff,delDt:del.dt});if(!uOpenMap[rk])uOpenMap[rk]={rk,row,diff,delDt:del.dt};}}\n    if(ev==='click'){const url=g(row,'url')||'',del=delTimes[rk];if(!del)continue;const diff=ts-del.ts,hp=url.toLowerCase().includes('youtube.com');if(hp||diff<=60){const rule=hp?'Honeypot':'Click \\u226460s';if(!botClickMap[rk])botClickMap[rk]={rk,row,diff,url,delDt:del.dt,rule};}else if(delK.has(rk)){totalClicks.push({rk,row,diff,url,delDt:del.dt});if(!uClickMap[rk])uClickMap[rk]={rk,row,diff,url,delDt:del.dt};}}}\n\n  /* Delivered = delivered recipients MINUS post-delivery bounces */\n  const cleanDelK=new Set([...delK].filter(k=>!bncK.has(k)));\n  const delivered=cleanDelK.size,uo=Object.keys(uOpenMap).length,uc=Object.keys(uClickMap).length;\n  const openRate=delivered?(uo/delivered*100).toFixed(2):'0.00';\n  const ctr=delivered?(uc/delivered*100).toFixed(2):'0.00';\n  const ctor=uo?(uc/uo*100).toFixed(2):'0.00';\n  const boc=Object.keys(botOpenMap).length,bcc=Object.keys(botClickMap).length;\n\n  /* Build 13 sheets */\n  const sheets=[];\n  sheets.push({name:'Summary',xml:mkSheet([[S('Email Marketing Analytics Report',4),''],[S('Campaign: '+campaignName+'  |  Period: '+dateLabel+'  |  Source: SendGrid',0),''],[S('',0),''],[S('DELIVERY METRICS',2),''],['Delivered',numFmt(delivered)],['Hard Bounces',numFmt(bncK.size)],['Soft Bounces',numFmt(softK.size)],['Dropped',numFmt(drpK.size)],['Unsubscribes',numFmt(unsK.size)],[S('',0),''],[S('ENGAGEMENT METRICS',2),''],['Total Opens',numFmt(totalOpens.length)],['Unique Opens',numFmt(uo)],['Total Clicks',numFmt(totalClicks.length)],['Unique Clicks',numFmt(uc)],[S('',0),''],[S('BOT ACTIVITY',2),''],['Bot Opens (Unique)',numFmt(boc)],['Bot Clicks (Unique)',numFmt(bcc)],[S('',0),''],[S('PERFORMANCE RATES',2),''],['Open Rate  (Unique Opens / Delivered)',openRate+'%'],['CTR  (Unique Clicks / Delivered)',ctr+'%'],['CTOR  (Unique Clicks / Unique Opens)',ctor+'%'],[S('NOTES & METHODOLOGY',2),''],[S('\\u2022 All event timestamps are read from the processed column.',3),''],[S('\\u2022 recipient_key = email + message_id.',3),''],[S('\\u2022 Bot activity identified via honeypot clicks (youtube.com) OR interactions within 1 minute of delivery.',3),''],[S('\\u2022 Bot metrics are counted uniquely per recipient_key.',3),''],[S('\\u2022 '+postDelBounce+' recipients had both delivered and bounce (post-delivery bounces) \\u2014 counted in Hard Bounces.',3),''],[S('\\u2022 '+defThenBounce+' recipients were deferred then bounced (never delivered) \\u2014 classified as Hard Bounces.',3),''],[S('\\u2022 Soft Bounce = deferred AND no delivered AND no bounce.',3),''],[S('\\u2022 Deferred emails that later delivered are counted only in Delivered.',3),''],[S('\\u2022 Both unsubscribe and group_unsubscribe counted as Unsubscribes.',3),''],[S('\\u2022 Open Rate = Unique Opens / Delivered \\u00d7 100.',3),''],[S('\\u2022 CTR = Unique Clicks / Delivered \\u00d7 100.',3),''],[S('\\u2022 CTOR = Unique Clicks / Unique Opens \\u00d7 100.',3),'']],[55,15],['A1:B1','A2:B2'])});\n\n  sheets.push({name:'_ChartData',xml:mkSheet([['Delivery Overview','Delivered','Hard Bounces','Dropped'],['',String(delivered),String(bncK.size),String(drpK.size)],['Opens','Total Opens','Bot Opens',''],['',String(totalOpens.length),String(boc),''],['Clicks','Total Clicks','Bot Clicks',''],['',String(totalClicks.length),String(bcc),''],['Unique Engagement','Unique Opens','Unique Clicks',''],['',String(uo),String(uc),''],['Rates (%)','Open Rate','CTR','CTOR'],['',openRate,ctr,ctor]],[20,15,15,15])});\n\n  const seen=new Set();const uniqDel=deliveredRows.filter(d=>{if(seen.has(d.rk))return false;if(bncK.has(d.rk))return false;seen.add(d.rk);return true;});\n  const ds=[[S('Delivered Emails',2),'','','','','',''],[S('Total: '+numFmt(delivered)+' unique recipient sends confirmed delivered',0),'','','','','',''],[S('#',1),S('Email',1),S('Message ID',1),S('Delivered Time',1),S('Subject',1),S('From',1),S('Single Send ID',1)]];\n  uniqDel.forEach((d,i)=>{ds.push([String(i+1),g(d.row,'email'),g(d.row,'message_id'),fmtDt(g(d.row,'processed')),g(d.row,'subject'),g(d.row,'from'),singlesendId]);});\n  sheets.push({name:'Delivered',xml:mkSheet(ds,[6,30,22,22,30,25,20])});\n\n  const tos=[[S('Total Opens (Human)',2),'','','','',''],[S('Total: '+numFmt(totalOpens.length)+' human opens \\u2014 open_time \\u2212 delivered_time > 60 seconds',0),'','','','',''],[S('#',1),S('Email',1),S('Message ID',1),S('Delivered Time',1),S('Open Time',1),S('Time Difference',1)]];\n  totalOpens.forEach((o,i)=>{tos.push([String(i+1),o.rk.split('|')[0],o.rk.split('|')[1],fmtDt(o.delDt),fmtDt(g(o.row,'processed')),fmtDiff(o.diff)]);});\n  sheets.push({name:'Total Opens',xml:mkSheet(tos,[6,30,22,22,22,15])});\n\n  const tcs=[[S('Total Clicks (Human)',2),'','','','','',''],[S('Total: '+numFmt(totalClicks.length)+' human clicks \\u2014 non-honeypot, click_time \\u2212 delivered_time > 60 seconds',0),'','','','','',''],[S('#',1),S('Email',1),S('Message ID',1),S('Delivered Time',1),S('Click Time',1),S('Time Difference',1),S('Clicked URL',1)]];\n  totalClicks.forEach((c,i)=>{tcs.push([String(i+1),c.rk.split('|')[0],c.rk.split('|')[1],fmtDt(c.delDt),fmtDt(g(c.row,'processed')),fmtDiff(c.diff),c.url]);});\n  sheets.push({name:'Total Clicks',xml:mkSheet(tcs,[6,30,22,22,22,15,45])});\n\n  const uos=[[S('Unique Opens',2),'','','','',''],[S('Total: '+numFmt(uo)+' unique recipients with at least one human open (>60s after delivery)',0),'','','','',''],[S('#',1),S('Email',1),S('Message ID',1),S('Delivered Time',1),S('First Human Open Time',1),S('Time Difference',1)]];\n  Object.values(uOpenMap).forEach((o,i)=>{uos.push([String(i+1),o.rk.split('|')[0],o.rk.split('|')[1],fmtDt(o.delDt),fmtDt(g(o.row,'processed')),fmtDiff(o.diff)]);});\n  sheets.push({name:'Unique Opens',xml:mkSheet(uos,[6,30,22,22,22,15])});\n\n  const ucs=[[S('Unique Clicks',2),'','','','','',''],[S('Total: '+numFmt(uc)+' unique recipients with at least one human click',0),'','','','','',''],[S('#',1),S('Email',1),S('Message ID',1),S('Delivered Time',1),S('First Human Click Time',1),S('Time Difference',1),S('Clicked URL',1)]];\n  Object.values(uClickMap).forEach((c,i)=>{ucs.push([String(i+1),c.rk.split('|')[0],c.rk.split('|')[1],fmtDt(c.delDt),fmtDt(g(c.row,'processed')),fmtDiff(c.diff),c.url]);});\n  sheets.push({name:'Unique Clicks',xml:mkSheet(ucs,[6,30,22,22,22,15,45])});\n\n  const bos=[[S('Bot Opens',2),'','','','','',''],[S('Total: '+numFmt(boc)+' unique recipients flagged as bots \\u2014 open_time \\u2212 delivered_time \\u2264 60 seconds',0),'','','','','',''],[S('#',1),S('Email',1),S('Message ID',1),S('Delivered Time',1),S('Open Time',1),S('Time Difference',1),S('Detection Rule',1)]];\n  Object.values(botOpenMap).forEach((o,i)=>{bos.push([String(i+1),o.rk.split('|')[0],o.rk.split('|')[1],fmtDt(o.delDt),fmtDt(g(o.row,'processed')),fmtDiff(o.diff),o.rule]);});\n  sheets.push({name:'Bot Opens',xml:mkSheet(bos,[6,30,22,22,22,15,16])});\n\n  const bcs=[[S('Bot Clicks',2),'','','','','','',''],[S('Total: '+numFmt(bcc)+' unique recipients flagged as bots \\u2014 honeypot URL or click within 60s of delivery',0),'','','','','','',''],[S('#',1),S('Email',1),S('Message ID',1),S('Delivered Time',1),S('Click Time',1),S('Time Difference',1),S('URL',1),S('Detection Rule',1)]];\n  Object.values(botClickMap).forEach((c,i)=>{bcs.push([String(i+1),c.rk.split('|')[0],c.rk.split('|')[1],fmtDt(c.delDt),fmtDt(g(c.row,'processed')),fmtDiff(c.diff),c.url||'',c.rule]);});\n  sheets.push({name:'Bot Clicks',xml:mkSheet(bcs,[6,30,22,22,22,15,45,16])});\n\n  const hbs=[[S('Hard Bounces',2),'','','','',''],[S('Total: '+numFmt(bncK.size)+' permanent delivery failures. Includes '+postDelBounce+' post-delivery bounces and '+defThenBounce+' deferred-then-bounced.',0),'','','','',''],[S('#',1),S('Email',1),S('Message ID',1),S('Bounce Time',1),S('Type',1),S('Reason',1)]];\n  bounceRows.forEach((b,i)=>{hbs.push([String(i+1),g(b.row,'email'),g(b.row,'message_id'),fmtDt(g(b.row,'processed')),g(b.row,'type'),g(b.row,'reason')]);});\n  sheets.push({name:'Hard Bounces',xml:mkSheet(hbs,[6,30,22,22,12,55])});\n\n  const sbs=[[S('Soft Bounces',2),'','','',''],[S('Total: '+numFmt(softK.size)+' \\u2014 deferred with no delivered event and no bounce event',0),'','','',''],[S('#',1),S('Email',1),S('Message ID',1),S('Deferred Time',1),S('Reason',1)]];\n  let sbi=0;const seenS=new Set();deferredRows.forEach(d=>{if(softK.has(d.rk)&&!seenS.has(d.rk)){seenS.add(d.rk);sbi++;sbs.push([String(sbi),g(d.row,'email'),g(d.row,'message_id'),fmtDt(g(d.row,'processed')),g(d.row,'reason')]);}});\n  sheets.push({name:'Soft Bounces',xml:mkSheet(sbs,[6,30,22,22,55])});\n\n  const uss=[[S('Unsubscribes',2),'','','',''],[S('Total: '+numFmt(unsK.size)+' recipients who opted out (unsubscribe + group_unsubscribe)',0),'','','',''],[S('#',1),S('Email',1),S('Message ID',1),S('Unsubscribe Time',1),S('Event Type',1)]];\n  unsubRows.forEach((u,i)=>{uss.push([String(i+1),g(u.row,'email'),g(u.row,'message_id'),fmtDt(g(u.row,'processed')),g(u.row,'event')]);});\n  sheets.push({name:'Unsubscribes',xml:mkSheet(uss,[6,30,22,22,20])});\n\n  const dps=[[S('Dropped Emails',2),'','','',''],[S('Total: '+numFmt(drpK.size)+' emails dropped before delivery',0),'','','',''],[S('#',1),S('Email',1),S('Message ID',1),S('Dropped Time',1),S('Reason',1)]];\n  droppedRows.forEach((d,i)=>{dps.push([String(i+1),g(d.row,'email'),g(d.row,'message_id'),fmtDt(g(d.row,'processed')),g(d.row,'reason')]);});\n  sheets.push({name:'Dropped',xml:mkSheet(dps,[6,30,22,22,55])});\n\n  const charts=[\n    {title:'Chart 1: Delivery Overview',cats:['Delivered','Hard Bounces','Dropped'],series:[{name:'Delivered',values:[delivered]},{name:'Hard Bounces',values:[bncK.size]},{name:'Dropped',values:[drpK.size]}]},\n    {title:'Chart 2: Total Opens vs Bot Opens',cats:['Total Opens','Bot Opens'],series:[{name:'Total Opens',values:[totalOpens.length]},{name:'Bot Opens',values:[boc]}]},\n    {title:'Chart 3: Total Clicks vs Bot Clicks',cats:['Total Clicks','Bot Clicks'],series:[{name:'Total Clicks',values:[totalClicks.length]},{name:'Bot Clicks',values:[bcc]}]},\n    {title:'Chart 4: Unique Opens vs Unique Clicks',cats:['Unique Opens','Unique Clicks'],series:[{name:'Unique Opens',values:[uo]},{name:'Unique Clicks',values:[uc]}]},\n    {title:'Chart 5: Open Rate vs CTR vs CTOR (%)',cats:['Open Rate','CTR','CTOR'],series:[{name:'Open Rate',values:[Number(openRate)]},{name:'CTR',values:[Number(ctr)]},{name:'CTOR',values:[Number(ctor)]}]}\n  ];\n\n  const xlsxBuf=mkXlsx(sheets,charts);\n  results.push({json:{...item.json,delivered,hardBounces:bncK.size,softBounces:softK.size,dropped:drpK.size,unsubs:unsK.size,totalOpens:totalOpens.length,uniqueOpens:uo,totalClicks:totalClicks.length,uniqueClicks:uc,botOpens:boc,botClicks:bcc,openRate,ctr,ctor},binary:{data:{data:xlsxBuf.toString('base64'),mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',fileName:xlsxFile,fileExtension:'xlsx'}}});\n}\nreturn results;\n"
+      },
+      "id": "0ab79ba1-1369-4ae7-b92f-df82a86f4988",
+      "name": "Generate Excel Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5904,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst first = $input.first();\nconst dateLabel = first.json.dateLabel || new Date().toISOString().slice(0,10);\nconst folderName = 'SendGrid_Reports_' + dateLabel.replace(/[\\s/]/g, '_');\nreturn [{ json: { folderName, dateLabel, campaignCount: $input.all().length } }];\n"
+      },
+      "id": "d5837171-915e-4ee0-b06b-8255789bc9b7",
+      "name": "Prep Folder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6144,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $json.folderName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root"
+        },
+        "options": {}
+      },
+      "id": "13ca6741-ac1c-4ead-8333-cfc8265448f0",
+      "name": "Create Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        6384,
+        -480
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ojtRoFzvS7tTw2kh",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst folderId = $input.first().json.id;\nconst folderName = $input.first().json.name;\nconst excelItems = $('Generate Excel Report').all();\n\nconst results = [];\nfor (const it of excelItems) {\n  results.push({\n    json: { ...it.json, folderId, folderName },\n    binary: it.binary\n  });\n}\nreturn results;\n"
+      },
+      "id": "e39c98a3-e2a1-47b5-b246-8006cf77bdf4",
+      "name": "Prep Upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6624,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.xlsxFile }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.folderId }}"
+        },
+        "options": {}
+      },
+      "id": "a2a72608-a8fe-478a-ad3f-b88f2769c477",
+      "name": "Upload Files",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        6864,
+        -480
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ojtRoFzvS7tTw2kh",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst reportItems = $('Generate Excel Report').all();\nconst driveItems = $('Upload Files').all();\n\nconst linkMap = {};\nfor (const d of driveItems) {\n  const name = d.json.name || '';\n  const id = d.json.id || '';\n  if (id) linkMap[name] = 'https://drive.google.com/file/d/' + id + '/view';\n}\n\nconst folderId = $('Create Folder').first().json.id || '';\nconst folderLink = folderId ? 'https://drive.google.com/drive/folders/' + folderId : '';\nconst dateLabel = reportItems[0].json.dateLabel || '';\n\nlet html = '<div style=\"font-family:Calibri,Arial,sans-serif;font-size:14px;color:#333;\">';\nhtml += '<h2 style=\"color:#4472C4;margin-bottom:5px;\">SendGrid Campaign Reports \\u2014 ' + dateLabel + '</h2>';\nhtml += '<p style=\"margin-top:0;\">' + reportItems.length + ' campaign reports generated and uploaded to Google Drive.</p>';\nif (folderLink) html += '<p><strong>\\ud83d\\udcc2 Drive Folder:</strong> <a href=\"' + folderLink + '\" style=\"color:#4472C4;\">' + folderLink + '</a></p>';\n\nhtml += '<table style=\"border-collapse:collapse;font-size:12px;margin-top:10px;width:100%;\">';\nhtml += '<tr style=\"background:#4472C4;color:#fff;\"><th style=\"padding:6px 10px;border:1px solid #ddd;text-align:left;\">#</th><th style=\"padding:6px 10px;border:1px solid #ddd;text-align:left;\">Campaign</th><th style=\"padding:6px 10px;border:1px solid #ddd;\">Del</th><th style=\"padding:6px 10px;border:1px solid #ddd;\">U.Opens</th><th style=\"padding:6px 10px;border:1px solid #ddd;\">OR%</th><th style=\"padding:6px 10px;border:1px solid #ddd;\">U.Clicks</th><th style=\"padding:6px 10px;border:1px solid #ddd;\">CTR%</th><th style=\"padding:6px 10px;border:1px solid #ddd;\">CTOR%</th></tr>';\n\nreportItems.forEach((it, i) => {\n  const j = it.json;\n  const bg = i % 2 === 0 ? '#fff' : '#f7f7f7';\n  const url = linkMap[j.xlsxFile] || '';\n  const nameCell = url ? '<a href=\"'+url+'\" style=\"color:#4472C4;text-decoration:none;\">'+j.campaignName+'</a>' : j.campaignName;\n  html += '<tr style=\"background:'+bg+';\"><td style=\"padding:4px 10px;border:1px solid #eee;\">'+(i+1)+'</td><td style=\"padding:4px 10px;border:1px solid #eee;\">'+nameCell+'</td><td style=\"padding:4px 10px;border:1px solid #eee;text-align:center;\">'+j.delivered+'</td><td style=\"padding:4px 10px;border:1px solid #eee;text-align:center;\">'+j.uniqueOpens+'</td><td style=\"padding:4px 10px;border:1px solid #eee;text-align:center;\">'+j.openRate+'%</td><td style=\"padding:4px 10px;border:1px solid #eee;text-align:center;\">'+j.uniqueClicks+'</td><td style=\"padding:4px 10px;border:1px solid #eee;text-align:center;\">'+j.ctr+'%</td><td style=\"padding:4px 10px;border:1px solid #eee;text-align:center;\">'+j.ctor+'%</td></tr>';\n});\nhtml += '</table>';\nhtml += '<p style=\"font-size:11px;color:#888;margin-top:15px;\">Each Excel contains 13 sheets + 5 charts. Bot detection: honeypot (youtube.com) OR open/click \\u226460s after delivery.</p></div>';\n\nreturn [{ json: { dateLabel, emailHtml: html, count: reportItems.length } }];\n"
+      },
+      "id": "df435b9f-44d0-418c-97d1-a7a53bec3859",
+      "name": "Build Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7104,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "srikanthdemandnxt@gmail.com",
+        "subject": "=SendGrid Reports — {{ $json.dateLabel }} ({{ $json.count }} campaigns)",
+        "message": "={{ $json.emailHtml }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "046aa9f4-9792-4b1a-bf75-5873ec5582fe",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        7344,
+        -480
+      ],
+      "webhookId": "6d988c40-9257-41ca-8019-3ee84f979705",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gHy8yqh3dEYDThuY",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Upload CSV": {
+      "main": [
+        [
+          {
+            "node": "Extract CSV Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract CSV Text": {
+      "main": [
+        [
+          {
+            "node": "Bifurcate by singlesend_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bifurcate by singlesend_id": {
+      "main": [
+        [
+          {
+            "node": "Generate Excel Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Excel Report": {
+      "main": [
+        [
+          {
+            "node": "Prep Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Folder": {
+      "main": [
+        [
+          {
+            "node": "Create Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Folder": {
+      "main": [
+        [
+          {
+            "node": "Prep Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Upload": {
+      "main": [
+        [
+          {
+            "node": "Upload Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Files": {
+      "main": [
+        [
+          {
+            "node": "Build Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6814a280-03d7-4746-b1fa-780959d38fc6",
+  "meta": {
+    "instanceId": "2e15d69fa091c1c59076842af7b723197b0bf6b09c266aacecd6f7f68d2ea90b"
+  },
+  "id": "DRaJUURRNKuiFFt4",
+  "tags": []
+}

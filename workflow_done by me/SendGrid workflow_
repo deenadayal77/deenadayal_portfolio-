@@ -1,0 +1,464 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 4
+            }
+          ]
+        }
+      },
+      "id": "1cf86925-517b-494c-9802-f220e690a697",
+      "name": "Schedule Trigger (Every 4hrs)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -3568,
+        -160
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "87448af3-1851-4d93-ac4c-dbf58da93455",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3568,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- DATES SET TO TODAY ----\nvar MANUAL_START = '2026-04-06';\nvar MANUAL_END   = '2026-04-06';\n// ----------------------------\n\nfunction pad(n) { return String(n).padStart(2, '0'); }\nfunction formatTS(yr, mo, dy, hh, mm, ss) {\n  return pad(yr)+'-'+pad(mo)+'-'+pad(dy)+'T'+pad(hh)+':'+pad(mm)+':'+pad(ss)+'Z';\n}\n\nvar sp = MANUAL_START.trim().split('-');\nvar startTS = formatTS(parseInt(sp[0]),parseInt(sp[1]),parseInt(sp[2]),0,0,0);\nvar ep = MANUAL_END.trim().split('-');\nvar endTS = formatTS(parseInt(ep[0]),parseInt(ep[1]),parseInt(ep[2]),23,59,59);\n\nvar q = 'last_event_time BETWEEN TIMESTAMP \"'+startTS+'\" AND TIMESTAMP \"'+endTS+'\"';\n\nreturn [{\n  json: {\n    query: q,\n    encodedQuery: encodeURIComponent(q),\n    startTS: startTS,\n    endTS: endTS,\n    dateRangeLabel: startTS.substring(0,10)+' to '+endTS.substring(0,10)\n  }\n}];"
+      },
+      "id": "ffc61c99-0f79-4c1d-aa22-dd7e111f273c",
+      "name": "Build Date Range Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3264,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.sendgrid.com/v3/messages?query={{ $json.encodedQuery }}&limit=1000",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "f20ad0c4-cff7-42af-b630-cc709b0c61f4",
+      "name": "GET Messages List",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2960,
+        -48
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "NKIl5MEZfQeapj6U",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract msg_ids as individual items for the HTTP Request node\nvar response = $input.first().json;\nvar messages = response.messages || [];\nvar dateRangeLabel = $('Build Date Range Query').first().json.dateRangeLabel;\n\nif (messages.length === 0) {\n  return [{ json: { msg_id: '__EMPTY__', dateRangeLabel: dateRangeLabel, isEmpty: true } }];\n}\n\n// Output one item per message so HTTP Request node processes each\nvar items = [];\nfor (var i = 0; i < messages.length; i++) {\n  items.push({\n    json: {\n      msg_id: messages[i].msg_id,\n      dateRangeLabel: dateRangeLabel,\n      isEmpty: false\n    }\n  });\n}\nreturn items;"
+      },
+      "id": "e9b96384-5b09-4316-a5d9-8b24b50e8279",
+      "name": "Split into Individual msg_ids",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2656,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-has-msgs",
+              "leftValue": "={{ $json.isEmpty }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "aea74db2-49b5-4692-8fca-08d4c353390b",
+      "name": "Has Messages?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2368,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.sendgrid.com/v3/messages/{{ encodeURIComponent($json.msg_id) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 5
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "10a6a216-c173-40fd-8261-e2a73c32ab59",
+      "name": "GET Message Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2064,
+        -48
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "NKIl5MEZfQeapj6U",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// FLATTEN EVENTS INTO 28-COLUMN ROWS\n// ============================================================\n// Each input item is one GET /v3/messages/{msg_id} response.\n// We flatten the events[] into individual rows.\n// ============================================================\n\nvar items = $input.all();\nvar dateRangeLabel = items[0]?.json?.dateRangeLabel || $('Build Date Range Query').first().json.dateRangeLabel;\nvar allRows = [];\n\nfor (var i = 0; i < items.length; i++) {\n  var detail = items[i].json;\n  \n  // Skip error responses\n  if (!detail || detail.error || detail.errors) continue;\n  \n  var msgId = detail.msg_id || '';\n  var apiKeyId = detail.api_key_id || '';\n  var asmGroupId = detail.asm_group_id || 0;\n  var templateId = detail.template_id || '';\n  var outboundIp = detail.outbound_ip || '';\n  var outboundIpType = detail.outbound_ip_type || '';\n  var fromEmail = detail.from_email || '';\n  var subject = detail.subject || '';\n  var credentialId = detail.credential_id || '';\n  var originatingIp = detail.originating_ip || '';\n  var username = detail.teammate || detail.username || '';\n  \n  var uniqueArgs = detail.unique_args || detail.custom_args || {};\n  var uniqueArgsStr = (typeof uniqueArgs === 'string') ? uniqueArgs : JSON.stringify(uniqueArgs);\n  var categories = detail.categories || [];\n  var categoriesStr = Array.isArray(categories) ? JSON.stringify(categories) : String(categories);\n  \n  var events = detail.events || [];\n  \n  if (events.length === 0) {\n    allRows.push({\n      processed: '', message_id: msgId, event: detail.status || '',\n      api_key_id: apiKeyId, recv_message_id: msgId,\n      credential_id: credentialId, subject: subject,\n      from: fromEmail, email: detail.to_email || '',\n      asm_group_id: asmGroupId, template_id: templateId,\n      originating_ip: originatingIp, reason: '',\n      outbound_ip: outboundIp, outbound_ip_type: outboundIpType,\n      mx: '', attempt: 0, url: '', user_agent: '',\n      type: '', is_unique: '', username: username,\n      categories: categoriesStr,\n      marketing_campaign_id: detail.marketing_campaign_id || '',\n      marketing_campaign_name: detail.marketing_campaign_name || '',\n      marketing_campaign_split_id: detail.marketing_campaign_split_id || '',\n      marketing_campaign_version: detail.marketing_campaign_version || '',\n      unique_args: uniqueArgsStr\n    });\n  } else {\n    for (var e = 0; e < events.length; e++) {\n      var evt = events[e];\n      allRows.push({\n        processed: evt.processed || evt.event_time || evt.timestamp || '',\n        message_id: msgId,\n        event: evt.event_name || evt.event || '',\n        api_key_id: apiKeyId, recv_message_id: msgId,\n        credential_id: credentialId, subject: subject,\n        from: fromEmail,\n        email: evt.to_email || detail.to_email || '',\n        asm_group_id: asmGroupId, template_id: templateId,\n        originating_ip: originatingIp || evt.originating_ip || '',\n        reason: evt.reason || evt.bounce_type || evt.response || '',\n        outbound_ip: evt.outbound_ip || outboundIp,\n        outbound_ip_type: evt.outbound_ip_type || outboundIpType,\n        mx: evt.mx || evt.mx_server || '',\n        attempt: evt.attempt || evt.attempt_num || 0,\n        url: evt.url || '',\n        user_agent: evt.user_agent || evt.useragent || '',\n        type: evt.type || evt.bounce_type || '',\n        is_unique: (evt.is_unique !== undefined) ? evt.is_unique : '',\n        username: username, categories: categoriesStr,\n        marketing_campaign_id: detail.marketing_campaign_id || '',\n        marketing_campaign_name: detail.marketing_campaign_name || '',\n        marketing_campaign_split_id: detail.marketing_campaign_split_id || '',\n        marketing_campaign_version: detail.marketing_campaign_version || '',\n        unique_args: uniqueArgsStr\n      });\n    }\n  }\n}\n\nreturn [{ json: { rows: allRows, totalRows: allRows.length, dateRangeLabel: dateRangeLabel } }];"
+      },
+      "id": "2dce8c60-00a1-4b11-ac7f-8c0edb549cba",
+      "name": "Flatten Events into Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1696,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// GROUP BY CAMPAIGN PREFIX & BUILD CSVs\n// ============================================================\nvar rows = $input.first().json.rows;\nvar dateRangeLabel = $input.first().json.dateRangeLabel;\n\nif (!rows || rows.length === 0) {\n  return [{ json: { campaignGroup: 'empty', csvContent: '', rowCount: 0, singlesendIds: [] } }];\n}\n\nvar CSV_HEADERS = ['processed','message_id','event','api_key_id','recv_message_id','credential_id','subject','from','email','asm_group_id','template_id','originating_ip','reason','outbound_ip','outbound_ip_type','mx','attempt','url','user_agent','type','is_unique','username','categories','marketing_campaign_id','marketing_campaign_name','marketing_campaign_split_id','marketing_campaign_version','unique_args'];\nvar headerLine = CSV_HEADERS.join(',');\n\nfunction csvEscape(val) {\n  if (val === null || val === undefined) return '';\n  var str = String(val);\n  if (str.indexOf(',')>=0 || str.indexOf('\"')>=0 || str.indexOf('\\n')>=0) return '\"'+str.replace(/\"/g,'\"\"')+'\"';\n  return str;\n}\n\n// Group rows by singlesend_id\nvar byId = {};\nfor (var i = 0; i < rows.length; i++) {\n  var row = rows[i];\n  var sid = '__no_singlesend_id__', sname = 'no_campaign';\n  try {\n    var ua = row.unique_args;\n    if (typeof ua === 'string' && ua.charAt(0) === '{') {\n      var p = JSON.parse(ua);\n      if (p.singlesend_id) sid = p.singlesend_id;\n      if (p.singlesend_name) sname = p.singlesend_name;\n    }\n  } catch(e) {}\n  if (!byId[sid]) byId[sid] = { name: sname, rows: [] };\n  if (sname !== 'no_campaign') byId[sid].name = sname;\n  byId[sid].rows.push(row);\n}\n\n// Group singlesend_ids by campaign prefix\nvar campaignGroups = {};\nvar sids = Object.keys(byId);\nfor (var j = 0; j < sids.length; j++) {\n  var sid = sids[j];\n  var data = byId[sid];\n  var name = data.name;\n  var prefix = 'Uncategorized';\n  var dashIdx = name.indexOf(' - ');\n  if (dashIdx > 0) prefix = name.substring(0, dashIdx).trim();\n  else if (name !== 'no_campaign') prefix = name.split(' ')[0];\n  \n  if (!campaignGroups[prefix]) campaignGroups[prefix] = { sids: [], rows: [], sampleName: name };\n  campaignGroups[prefix].sids.push(sid);\n  for (var k = 0; k < data.rows.length; k++) campaignGroups[prefix].rows.push(data.rows[k]);\n  if (name.length > campaignGroups[prefix].sampleName.length) campaignGroups[prefix].sampleName = name;\n}\n\n// Build output per campaign group\nvar result = [];\nvar prefixes = Object.keys(campaignGroups);\nfor (var g = 0; g < prefixes.length; g++) {\n  var pre = prefixes[g];\n  var grp = campaignGroups[pre];\n  var csvLines = [headerLine];\n  for (var r = 0; r < grp.rows.length; r++) {\n    var line = [];\n    for (var c = 0; c < CSV_HEADERS.length; c++) line.push(csvEscape(grp.rows[r][CSV_HEADERS[c]]));\n    csvLines.push(line.join(','));\n  }\n  \n  var campaignName = grp.sampleName;\n  var nm = campaignName.match(/^\\d+\\s*-\\s*(.+?)(?:\\s*-\\s*Camp|\\s*-\\s*\\d|\\s*-\\s*L\\d|$)/);\n  if (nm) campaignName = nm[1].trim();\n  var safeName = campaignName.replace(/[^a-z0-9 _-]/gi,'').replace(/\\s+/g,'_').substring(0,50);\n  \n  result.push({\n    json: {\n      campaignPrefix: pre,\n      campaignName: campaignName,\n      dateRange: dateRangeLabel,\n      singlesendIds: grp.sids,\n      singlesendCount: grp.sids.length,\n      csvContent: csvLines.join('\\n'),\n      rowCount: grp.rows.length,\n      csvFileName: safeName+'_'+pre+'.csv',\n      reportFileName: safeName+'_'+pre+'_report.xlsx'\n    }\n  });\n}\nreturn result;"
+      },
+      "id": "a405fa1b-2558-45ee-b615-de6fbe10fb92",
+      "name": "Group by Campaign & Build CSVs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1344,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-notempty",
+              "leftValue": "={{ $json.rowCount }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f0e9b2a2-e666-4a50-8aac-2351c99abe87",
+      "name": "Skip Empty",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -976,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// ANALYZE & CLASSIFY EVENTS + BUILD EXCEL REPORT DATA\n// ============================================================\nvar csvContent = $input.first().json.csvContent;\nvar campaignName = $input.first().json.campaignName;\nvar dateRange = $input.first().json.dateRange;\nvar singlesendIds = $input.first().json.singlesendIds;\nvar reportFileName = $input.first().json.reportFileName;\nvar csvFileName = $input.first().json.csvFileName;\n\n// Parse CSV\nvar lines = csvContent.split('\\n');\nvar headers = lines[0].split(',');\n\nfunction parseCSVLine(line) {\n  var result = [], current = '', inQ = false;\n  for (var i = 0; i < line.length; i++) {\n    var c = line.charAt(i);\n    if (inQ) {\n      if (c === '\"' && i+1 < line.length && line.charAt(i+1) === '\"') { current += '\"'; i++; }\n      else if (c === '\"') inQ = false;\n      else current += c;\n    } else {\n      if (c === '\"') inQ = true;\n      else if (c === ',') { result.push(current); current = ''; }\n      else current += c;\n    }\n  }\n  result.push(current);\n  return result;\n}\n\nvar rows = [];\nfor (var i = 1; i < lines.length; i++) {\n  if (!lines[i].trim()) continue;\n  var vals = parseCSVLine(lines[i]);\n  var row = {};\n  for (var h = 0; h < headers.length; h++) row[headers[h]] = vals[h] || '';\n  rows.push(row);\n}\n\n// Build delivery times & events by recipient key\nvar BOT_THRESHOLD = 60;\nvar deliveryTimes = {};\nvar eventsByKey = {};\n\nfunction parseTS(s) {\n  if (!s) return null;\n  try {\n    var d = new Date(s);\n    if (!isNaN(d.getTime())) return d;\n  } catch(e) {}\n  return null;\n}\n\nfunction fmtDiff(sec) {\n  var s = Math.abs(sec);\n  if (s < 60) return Math.round(s) + 's';\n  if (s < 3600) return (s/60).toFixed(1) + 'm';\n  return (s/3600).toFixed(1) + 'h';\n}\n\nfor (var i = 0; i < rows.length; i++) {\n  var row = rows[i];\n  var email = (row.email||'').trim().toLowerCase();\n  var msgId = (row.message_id||'').trim();\n  var event = (row.event||'').trim().toLowerCase();\n  var rkey = email + '|' + msgId;\n  var ts = parseTS(row.processed);\n  if (!eventsByKey[rkey]) eventsByKey[rkey] = [];\n  eventsByKey[rkey].push({ email:email, message_id:msgId, event:event, ts:ts, processed:row.processed, subject:row.subject, from:row.from, reason:row.reason, url:row.url, type:row.type, unique_args:row.unique_args, rkey:rkey });\n  if (event === 'delivered' && ts) {\n    if (!deliveryTimes[rkey] || ts < deliveryTimes[rkey]) deliveryTimes[rkey] = ts;\n  }\n}\n\n// Classify recipients\nvar deliveredKeys={}, bouncedKeys={}, deferredKeys={}, droppedKeys={}, unsubKeys={};\nvar rkeys = Object.keys(eventsByKey);\nfor (var i = 0; i < rkeys.length; i++) {\n  var rk = rkeys[i];\n  var evts = eventsByKey[rk];\n  var types = {};\n  for (var j = 0; j < evts.length; j++) types[evts[j].event] = true;\n  if (types['delivered']) deliveredKeys[rk] = true;\n  if (types['bounce']) bouncedKeys[rk] = true;\n  if (types['deferred']) deferredKeys[rk] = true;\n  if (types['dropped'] || types['drop']) droppedKeys[rk] = true;\n  if (types['unsubscribe'] || types['group_unsubscribe']) unsubKeys[rk] = true;\n}\n\nvar postDelBounce = {}, cleanDelivered = {}, softBounce = {};\nvar dk = Object.keys(deliveredKeys);\nfor (var i = 0; i < dk.length; i++) {\n  if (bouncedKeys[dk[i]]) postDelBounce[dk[i]] = true;\n  else cleanDelivered[dk[i]] = true;\n}\nvar defk = Object.keys(deferredKeys);\nfor (var i = 0; i < defk.length; i++) {\n  if (!deliveredKeys[defk[i]] && !bouncedKeys[defk[i]]) softBounce[defk[i]] = true;\n}\n\n// Opens & Clicks\nvar humanOpens=[], botOpensU={}, humanOpensU={}, humanClicks=[], botClicksU={}, humanClicksU={};\nfor (var i = 0; i < rows.length; i++) {\n  var row = rows[i];\n  var email = (row.email||'').trim().toLowerCase();\n  var msgId = (row.message_id||'').trim();\n  var event = (row.event||'').trim().toLowerCase();\n  var rkey = email + '|' + msgId;\n  var ts = parseTS(row.processed);\n  var delTime = deliveryTimes[rkey];\n  \n  if (event === 'open' && delTime && ts) {\n    var diff = (ts - delTime) / 1000;\n    var rec = { email:email, message_id:msgId, processed:row.processed, delivered_time:delTime, diff:diff, diffStr:fmtDiff(diff) };\n    if (diff <= BOT_THRESHOLD) {\n      rec.rule = 'Open within 60s of delivery';\n      if (!botOpensU[rkey] || ts.getTime() < parseTS(botOpensU[rkey].processed).getTime()) botOpensU[rkey] = rec;\n    } else {\n      humanOpens.push(rec);\n      if (!humanOpensU[rkey] || ts.getTime() < parseTS(humanOpensU[rkey].processed).getTime()) humanOpensU[rkey] = rec;\n    }\n  }\n  if (event === 'click' && delTime && ts) {\n    var diff = (ts - delTime) / 1000;\n    var url = row.url || '';\n    var isHoneypot = url.toLowerCase().indexOf('youtube.com') >= 0;\n    var rec = { email:email, message_id:msgId, processed:row.processed, delivered_time:delTime, diff:diff, diffStr:fmtDiff(diff), url:url };\n    if (isHoneypot || diff <= BOT_THRESHOLD) {\n      rec.rule = isHoneypot ? 'Honeypot URL (youtube.com)' : 'Click within 60s of delivery';\n      if (!botClicksU[rkey] || ts.getTime() < parseTS(botClicksU[rkey].processed).getTime()) botClicksU[rkey] = rec;\n    } else {\n      humanClicks.push(rec);\n      if (!humanClicksU[rkey] || ts.getTime() < parseTS(humanClicksU[rkey].processed).getTime()) humanClicksU[rkey] = rec;\n    }\n  }\n}\n\nhumanOpens.sort(function(a,b){return a.diff-b.diff;});\nhumanClicks.sort(function(a,b){return a.diff-b.diff;});\n\nvar nDel=Object.keys(cleanDelivered).length, nHB=Object.keys(bouncedKeys).length, nSB=Object.keys(softBounce).length;\nvar nDrop=Object.keys(droppedKeys).length, nUnsub=Object.keys(unsubKeys).length;\nvar nTO=humanOpens.length, nUO=Object.keys(humanOpensU).length;\nvar nTC=humanClicks.length, nUC=Object.keys(humanClicksU).length;\nvar nBO=Object.keys(botOpensU).length, nBC=Object.keys(botClicksU).length;\nvar openRate=nDel>0?(nUO/nDel*100):0, ctr=nDel>0?(nUC/nDel*100):0, ctor=nUO>0?(nUC/nUO*100):0;\n\nvar m = {\n  delivered:nDel, hardBounces:nHB, softBounces:nSB, dropped:nDrop, unsubscribes:nUnsub,\n  totalOpens:nTO, uniqueOpens:nUO, totalClicks:nTC, uniqueClicks:nUC,\n  botOpens:nBO, botClicks:nBC,\n  openRate:Math.round(openRate*100)/100, ctr:Math.round(ctr*100)/100, ctor:Math.round(ctor*100)/100,\n  postDeliveryBounces:Object.keys(postDelBounce).length,\n  deferredThenBounced:0\n};\n\n// Count deferred-then-bounced\nvar bk = Object.keys(bouncedKeys);\nfor (var i = 0; i < bk.length; i++) {\n  if (deferredKeys[bk[i]] && !deliveredKeys[bk[i]]) m.deferredThenBounced++;\n}\n\n// Build detail arrays for Excel sheets\nfunction getEvt(rkey, evtName) {\n  var evts = eventsByKey[rkey] || [];\n  for (var i = 0; i < evts.length; i++) if (evts[i].event === evtName) return evts[i];\n  return null;\n}\nfunction getSid(evt) {\n  try { return JSON.parse(evt.unique_args||'{}').singlesend_id||''; } catch(e){ return ''; }\n}\nfunction fmtDT(d) { if(!d) return ''; try{return d.toISOString().replace('T',' ').substring(0,19);}catch(e){return '';} }\n\nvar delArr=[], hbArr=[], sbArr=[], unsubArr=[], dropArr=[];\nvar cdk=Object.keys(cleanDelivered);\nfor(var i=0;i<cdk.length;i++){var e=getEvt(cdk[i],'delivered');if(e)delArr.push({email:e.email,message_id:e.message_id,time:e.processed,subject:e.subject,from:e.from,singlesend_id:getSid(e)});}\nvar bkk=Object.keys(bouncedKeys);\nfor(var i=0;i<bkk.length;i++){var e=getEvt(bkk[i],'bounce');if(e)hbArr.push({email:e.email,message_id:e.message_id,time:e.processed,type:e.type||'bounce',reason:e.reason||''});}\nvar sbk=Object.keys(softBounce);\nfor(var i=0;i<sbk.length;i++){var e=getEvt(sbk[i],'deferred');if(e)sbArr.push({email:e.email,message_id:e.message_id,time:e.processed,reason:e.reason||''});}\nvar usk=Object.keys(unsubKeys);\nfor(var i=0;i<usk.length;i++){var e=getEvt(usk[i],'unsubscribe')||getEvt(usk[i],'group_unsubscribe');if(e)unsubArr.push({email:e.email,message_id:e.message_id,time:e.processed,event_type:e.event});}\nvar drk=Object.keys(droppedKeys);\nfor(var i=0;i<drk.length;i++){var e=getEvt(drk[i],'dropped')||getEvt(drk[i],'drop');if(e)dropArr.push({email:e.email,message_id:e.message_id,time:e.processed,reason:e.reason||''});}\n\nfunction sortByTime(a,b){return (a.time||'').localeCompare(b.time||'');}\ndelArr.sort(sortByTime);hbArr.sort(sortByTime);sbArr.sort(sortByTime);unsubArr.sort(sortByTime);dropArr.sort(sortByTime);\n\nfunction sortedValues(obj){var arr=[];var keys=Object.keys(obj);for(var i=0;i<keys.length;i++)arr.push(obj[keys[i]]);arr.sort(function(a,b){return a.diff-b.diff;});return arr;}\n\nvar reportData = {\n  campaignName:campaignName, dateRange:dateRange, singlesendCount:singlesendIds.length,\n  metrics:m, delivered:delArr,\n  totalOpens:humanOpens.map(function(r){return{email:r.email,message_id:r.message_id,delivered_time:fmtDT(r.delivered_time),open_time:r.processed,diff:r.diffStr};}),\n  totalClicks:humanClicks.map(function(r){return{email:r.email,message_id:r.message_id,delivered_time:fmtDT(r.delivered_time),click_time:r.processed,diff:r.diffStr,url:r.url};}),\n  uniqueOpens:sortedValues(humanOpensU).map(function(r){return{email:r.email,message_id:r.message_id,delivered_time:fmtDT(r.delivered_time),open_time:r.processed,diff:r.diffStr};}),\n  uniqueClicks:sortedValues(humanClicksU).map(function(r){return{email:r.email,message_id:r.message_id,delivered_time:fmtDT(r.delivered_time),click_time:r.processed,diff:r.diffStr,url:r.url};}),\n  botOpens:sortedValues(botOpensU).map(function(r){return{email:r.email,message_id:r.message_id,delivered_time:fmtDT(r.delivered_time),open_time:r.processed,diff:r.diffStr,rule:r.rule};}),\n  botClicks:sortedValues(botClicksU).map(function(r){return{email:r.email,message_id:r.message_id,delivered_time:fmtDT(r.delivered_time),click_time:r.processed,diff:r.diffStr,url:r.url,rule:r.rule};}),\n  hardBounces:hbArr, softBounces:sbArr, unsubscribes:unsubArr, dropped:dropArr\n};\n\nreturn [{ json: { reportData:JSON.stringify(reportData), reportFileName:reportFileName, csvFileName:csvFileName, csvContent:csvContent, campaignName:campaignName, rowCount:rows.length } }];"
+      },
+      "id": "6a923a42-0f99-4736-a7ee-e8334bc8d0c5",
+      "name": "Analyze & Classify Events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -624,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// BUILD 13-SHEET EXCEL REPORT (using SheetJS/xlsx)\n// ============================================================\nvar reportDataStr = $input.first().json.reportData;\nvar reportFileName = $input.first().json.reportFileName;\nvar csvContent = $input.first().json.csvContent;\nvar csvFileName = $input.first().json.csvFileName;\n\nvar rd = JSON.parse(reportDataStr);\nvar m = rd.metrics;\n\nvar XLSX;\ntry { XLSX = require('xlsx'); } catch(e) {\n  return [{ json: { error: 'xlsx library not available in this n8n instance', reportData: reportDataStr } }];\n}\n\nvar wb = XLSX.utils.book_new();\n\nfunction addSheet(name, data) {\n  var ws = XLSX.utils.aoa_to_sheet(data);\n  if (data[0]) {\n    ws['!cols'] = data[0].map(function(_,i) {\n      var maxLen = 10;\n      for (var r=0;r<Math.min(data.length,50);r++) { var v=data[r][i]; if(v) { var l=String(v).length; if(l>maxLen)maxLen=l; } }\n      return { wch: Math.min(maxLen+2, 80) };\n    });\n  }\n  XLSX.utils.book_append_sheet(wb, ws, name);\n}\n\naddSheet('Summary', [\n  ['Email Marketing Analytics Report'],\n  ['Campaign: '+rd.campaignName+'  |  Period: '+rd.dateRange+'  |  Filtered: '+rd.singlesendCount+' Single Send IDs  |  Source: SendGrid'],\n  [],['DELIVERY METRICS'],['Delivered',m.delivered],['Hard Bounces',m.hardBounces],['Soft Bounces',m.softBounces],['Dropped',m.dropped],['Unsubscribes',m.unsubscribes],\n  [],['ENGAGEMENT METRICS'],['Total Opens',m.totalOpens],['Unique Opens',m.uniqueOpens],['Total Clicks',m.totalClicks],['Unique Clicks',m.uniqueClicks],\n  [],['BOT ACTIVITY'],['Bot Opens (Unique)',m.botOpens],['Bot Clicks (Unique)',m.botClicks],\n  [],['PERFORMANCE RATES'],['Open Rate (Unique Opens / Delivered)',m.openRate+'%'],['CTR (Unique Clicks / Delivered)',m.ctr+'%'],['CTOR (Unique Clicks / Unique Opens)',m.ctor+'%'],\n  ['NOTES & METHODOLOGY'],\n  ['Bot activity: honeypot clicks (youtube.com) OR interactions within 1 minute of delivery.'],\n  ['recipient_key = email + message_id.'],\n  [m.postDeliveryBounces+' post-delivery bounces excluded from Delivered.'],\n  [m.deferredThenBounced+' deferred-then-bounced classified as Hard Bounces.'],\n  ['Soft Bounce = deferred AND no delivered AND no bounce.'],\n  ['Open Rate = Unique Opens / Delivered x 100. CTR = Unique Clicks / Delivered x 100. CTOR = Unique Clicks / Unique Opens x 100.']\n]);\n\naddSheet('_ChartData', [\n  ['Delivery Overview','Delivered','Hard Bounces','Dropped'],[null,m.delivered,m.hardBounces,m.dropped],\n  ['Opens','Total Opens','Bot Opens'],[null,m.totalOpens,m.botOpens],\n  ['Clicks','Total Clicks','Bot Clicks'],[null,m.totalClicks,m.botClicks],\n  ['Unique Engagement','Unique Opens','Unique Clicks'],[null,m.uniqueOpens,m.uniqueClicks],\n  ['Rates (%)','Open Rate','CTR','CTOR'],[null,m.openRate,m.ctr,m.ctor]\n]);\n\nvar d3=[['Delivered Emails'],['Total: '+m.delivered+' unique recipient sends confirmed delivered'],['#','Email','Message ID','Delivered Time','Subject','From','Single Send ID']];\nfor(var i=0;i<rd.delivered.length;i++){var r=rd.delivered[i];d3.push([i+1,r.email,r.message_id,r.time,r.subject,r.from,r.singlesend_id]);}\naddSheet('Delivered',d3);\n\nvar d4=[['Total Opens (Human)'],['Total: '+m.totalOpens+' human opens'],['#','Email','Message ID','Delivered Time','Open Time','Time Difference']];\nfor(var i=0;i<rd.totalOpens.length;i++){var r=rd.totalOpens[i];d4.push([i+1,r.email,r.message_id,r.delivered_time,r.open_time,r.diff]);}\naddSheet('Total Opens',d4);\n\nvar d5=[['Total Clicks (Human)'],['Total: '+m.totalClicks+' human clicks'],['#','Email','Message ID','Delivered Time','Click Time','Time Difference','Clicked URL']];\nfor(var i=0;i<rd.totalClicks.length;i++){var r=rd.totalClicks[i];d5.push([i+1,r.email,r.message_id,r.delivered_time,r.click_time,r.diff,r.url]);}\naddSheet('Total Clicks',d5);\n\nvar d6=[['Unique Opens'],['Total: '+m.uniqueOpens+' unique recipients'],['#','Email','Message ID','Delivered Time','First Open Time','Time Difference']];\nfor(var i=0;i<rd.uniqueOpens.length;i++){var r=rd.uniqueOpens[i];d6.push([i+1,r.email,r.message_id,r.delivered_time,r.open_time,r.diff]);}\naddSheet('Unique Opens',d6);\n\nvar d7=[['Unique Clicks'],['Total: '+m.uniqueClicks+' unique recipients'],['#','Email','Message ID','Delivered Time','First Click Time','Time Difference','Clicked URL']];\nfor(var i=0;i<rd.uniqueClicks.length;i++){var r=rd.uniqueClicks[i];d7.push([i+1,r.email,r.message_id,r.delivered_time,r.click_time,r.diff,r.url]);}\naddSheet('Unique Clicks',d7);\n\nvar d8=[['Bot Opens'],['Total: '+m.botOpens+' unique recipients flagged as bots'],['#','Email','Message ID','Delivered Time','Open Time','Time Difference','Detection Rule']];\nfor(var i=0;i<rd.botOpens.length;i++){var r=rd.botOpens[i];d8.push([i+1,r.email,r.message_id,r.delivered_time,r.open_time,r.diff,r.rule]);}\naddSheet('Bot Opens',d8);\n\nvar d9=[['Bot Clicks'],['Total: '+m.botClicks+' unique recipients flagged as bots'],['#','Email','Message ID','Delivered Time','Click Time','Time Difference','URL','Detection Rule']];\nfor(var i=0;i<rd.botClicks.length;i++){var r=rd.botClicks[i];d9.push([i+1,r.email,r.message_id,r.delivered_time,r.click_time,r.diff,r.url,r.rule]);}\naddSheet('Bot Clicks',d9);\n\nvar d10=[['Hard Bounces'],['Total: '+m.hardBounces+' permanent delivery failures'],['#','Email','Message ID','Bounce Time','Type','Reason']];\nfor(var i=0;i<rd.hardBounces.length;i++){var r=rd.hardBounces[i];d10.push([i+1,r.email,r.message_id,r.time,r.type,r.reason]);}\naddSheet('Hard Bounces',d10);\n\nvar d11=[['Soft Bounces'],['Total: '+m.softBounces+' deferred with no delivery and no bounce'],['#','Email','Message ID','Deferred Time','Reason']];\nif(rd.softBounces.length===0)d11.push(['No soft bounce events recorded.']);\nfor(var i=0;i<rd.softBounces.length;i++){var r=rd.softBounces[i];d11.push([i+1,r.email,r.message_id,r.time,r.reason]);}\naddSheet('Soft Bounces',d11);\n\nvar d12=[['Unsubscribes'],['Total: '+m.unsubscribes+' recipients who opted out'],['#','Email','Message ID','Unsubscribe Time','Event Type']];\nfor(var i=0;i<rd.unsubscribes.length;i++){var r=rd.unsubscribes[i];d12.push([i+1,r.email,r.message_id,r.time,r.event_type]);}\naddSheet('Unsubscribes',d12);\n\nvar d13=[['Dropped Emails'],['Total: '+m.dropped+' emails dropped before delivery'],['#','Email','Message ID','Dropped Time','Reason']];\nif(rd.dropped.length===0)d13.push(['No dropped events recorded.']);\nfor(var i=0;i<rd.dropped.length;i++){var r=rd.dropped[i];d13.push([i+1,r.email,r.message_id,r.time,r.reason]);}\naddSheet('Dropped',d13);\n\nvar xlsxBuf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });\nvar base64 = Buffer.from(xlsxBuf).toString('base64');\nvar csvBase64 = Buffer.from(csvContent, 'utf-8').toString('base64');\n\nreturn [{\n  json: { reportFileName:reportFileName, csvFileName:csvFileName, campaignName:rd.campaignName, metrics:m },\n  binary: {\n    report: { data:base64, mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', fileName:reportFileName, fileExtension:'xlsx' },\n    csv: { data:csvBase64, mimeType:'text/csv', fileName:csvFileName, fileExtension:'csv' }\n  }\n}];"
+      },
+      "id": "d597f932-f5d1-4f94-a777-e779c60dcd15",
+      "name": "Build Excel Report (13 Sheets)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.reportFileName }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "root",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "dafc28e0-7d75-4ed2-8b41-bdaee9d635a5",
+      "name": "Upload Report to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        112,
+        -160
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ojtRoFzvS7tTw2kh",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.csvFileName }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "root",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "ccdbba8d-205c-454c-800c-5507b4c1af68",
+      "name": "Upload CSV to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        112,
+        80
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ojtRoFzvS7tTw2kh",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "var items = $input.all();\nvar reports = items.map(function(i) {\n  return {\n    campaign: i.json.campaignName || 'unknown',\n    delivered: (i.json.metrics||{}).delivered || 0,\n    opens: (i.json.metrics||{}).uniqueOpens || 0,\n    clicks: (i.json.metrics||{}).uniqueClicks || 0,\n    openRate: (i.json.metrics||{}).openRate || 0\n  };\n});\nreturn [{ json: { totalReports: reports.length, reports: reports } }];"
+      },
+      "id": "44bf3937-a7c1-4ffd-a965-664b45903874",
+      "name": "Log Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -48
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger (Every 4hrs)": {
+      "main": [
+        []
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Date Range Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Date Range Query": {
+      "main": [
+        [
+          {
+            "node": "GET Messages List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Messages List": {
+      "main": [
+        [
+          {
+            "node": "Split into Individual msg_ids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split into Individual msg_ids": {
+      "main": [
+        [
+          {
+            "node": "Has Messages?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Messages?": {
+      "main": [
+        [
+          {
+            "node": "GET Message Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Message Details": {
+      "main": [
+        [
+          {
+            "node": "Flatten Events into Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flatten Events into Rows": {
+      "main": [
+        [
+          {
+            "node": "Group by Campaign & Build CSVs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Group by Campaign & Build CSVs": {
+      "main": [
+        [
+          {
+            "node": "Skip Empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip Empty": {
+      "main": [
+        [
+          {
+            "node": "Analyze & Classify Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze & Classify Events": {
+      "main": [
+        [
+          {
+            "node": "Build Excel Report (13 Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Excel Report (13 Sheets)": {
+      "main": [
+        [
+          {
+            "node": "Upload Report to Drive",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload CSV to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Report to Drive": {
+      "main": [
+        [
+          {
+            "node": "Log Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload CSV to Drive": {
+      "main": [
+        [
+          {
+            "node": "Log Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2e15d69fa091c1c59076842af7b723197b0bf6b09c266aacecd6f7f68d2ea90b"
+  }
+}

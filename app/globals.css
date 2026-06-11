@@ -5,49 +5,53 @@
 /* ============================================================
    SIGNAL — design tokens
    Dark = default. Light = warm paper.
-   One accent: electric "signal" lime.
+   Accent: professional warm coral / burnt sienna.
    ============================================================ */
 
 :root,
 [data-theme='dark'] {
-  --bg: #0a0b0d;
-  --bg-2: #0e1013;
-  --bg-3: #14171c;
-  --elevated: #16191f;
-  --text: #f3f2ec;
-  --text-2: #a6a99f;
-  --text-3: #6b6e66;
-  --line: rgba(243, 242, 236, 0.09);
-  --line-2: rgba(243, 242, 236, 0.17);
-  --accent: #cdfa3d;
-  --accent-2: #b7e62f;
-  --accent-text: #cdfa3d;
-  --accent-ink: #0a0b0d;
-  --accent-soft: rgba(205, 250, 61, 0.12);
-  --shadow: rgba(0, 0, 0, 0.5);
-  --grain-opacity: 0.04;
+  --bg: #0d0c0b;
+  --bg-2: #141210;
+  --bg-3: #1c1916;
+  --elevated: #181512;
+  --text: #f5f0e8;
+  --text-2: #a09890;
+  --text-3: #6a6258;
+  --line: rgba(245, 240, 232, 0.08);
+  --line-2: rgba(245, 240, 232, 0.16);
+  --accent: #df7248;
+  --accent-2: #c45b32;
+  --accent-text: #e88460;
+  --accent-ink: #1c0a03;
+  --accent-soft: rgba(223, 114, 72, 0.13);
+  --accent-warm: #f0b84e;
+  --accent-warm-soft: rgba(240, 184, 78, 0.1);
+  --shadow: rgba(0, 0, 0, 0.65);
+  --grain-opacity: 0.042;
   --grid-opacity: 0.05;
   color-scheme: dark;
 }
 
 [data-theme='light'] {
-  --bg: #f3f1e9;
-  --bg-2: #f7f5ee;
-  --bg-3: #ece9de;
-  --elevated: #fbfaf4;
-  --text: #14150f;
-  --text-2: #56584d;
-  --text-3: #8b8c80;
-  --line: rgba(20, 21, 15, 0.1);
-  --line-2: rgba(20, 21, 15, 0.18);
-  --accent: #c4f130;
-  --accent-2: #a8d420;
-  --accent-text: #4f6b00;
-  --accent-ink: #14150f;
-  --accent-soft: rgba(120, 160, 0, 0.13);
-  --shadow: rgba(40, 42, 30, 0.1);
-  --grain-opacity: 0.03;
-  --grid-opacity: 0.06;
+  --bg: #f8f5f0;
+  --bg-2: #fdf9f3;
+  --bg-3: #ede8df;
+  --elevated: #fdf9f3;
+  --text: #141210;
+  --text-2: #4e4840;
+  --text-3: #8a8278;
+  --line: rgba(20, 18, 16, 0.1);
+  --line-2: rgba(20, 18, 16, 0.18);
+  --accent: #c0522a;
+  --accent-2: #a33e1a;
+  --accent-text: #b04726;
+  --accent-ink: #fff8f4;
+  --accent-soft: rgba(192, 82, 42, 0.1);
+  --accent-warm: #9a6010;
+  --accent-warm-soft: rgba(154, 96, 16, 0.1);
+  --shadow: rgba(20, 18, 16, 0.12);
+  --grain-opacity: 0.028;
+  --grid-opacity: 0.058;
   color-scheme: light;
 }
 
@@ -72,6 +76,24 @@ body {
   overflow-x: hidden;
 }
 
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 10000;
+  transform: translateY(-160%);
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  padding: 0.7rem 1rem;
+  font-weight: 600;
+  transition: transform 0.2s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 /* Atmospheric backdrop: a fixed gradient mesh + fine grid + grain.
    Everything here is STATIC (no per-frame repaint) for 60fps. */
 .atmosphere {
@@ -80,8 +102,9 @@ body {
   z-index: -2;
   pointer-events: none;
   background:
-    radial-gradient(60rem 60rem at 12% -5%, var(--accent-soft), transparent 60%),
-    radial-gradient(50rem 50rem at 100% 8%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 55%),
+    radial-gradient(56rem 52rem at 9% -8%, var(--accent-soft), transparent 58%),
+    radial-gradient(46rem 38rem at 95% 4%, var(--accent-warm-soft), transparent 58%),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-3) 28%, transparent), transparent 28rem),
     var(--bg);
 }
 
@@ -110,6 +133,11 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
 }
 
 button,
@@ -144,14 +172,23 @@ p {
 
 .shell {
   width: 100%;
-  max-width: 1240px;
+  max-width: 1280px;
   margin-inline: auto;
   padding-inline: clamp(1.25rem, 4vw, 3rem);
 }
 
 .section {
   position: relative;
-  padding-block: clamp(5rem, 12vw, 9rem);
+  padding-block: clamp(5.5rem, 11vw, 8.5rem);
+}
+
+.section::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line), transparent);
 }
 
 .kicker {
@@ -188,14 +225,14 @@ p {
 }
 
 .display-xl {
-  font-size: clamp(2.75rem, 11vw, 8.5rem);
-  line-height: 0.92;
-  letter-spacing: -0.045em;
+  font-size: clamp(2.5rem, 5vw, 5rem);
+  line-height: 0.93;
+  letter-spacing: -0.04em;
   font-weight: 600;
 }
 
 .display-lg {
-  font-size: clamp(2.25rem, 6.5vw, 4.75rem);
+  font-size: clamp(1.9rem, 3.6vw, 3.5rem);
   line-height: 0.98;
   letter-spacing: -0.04em;
 }
@@ -205,6 +242,7 @@ p {
   line-height: 1.55;
   color: var(--text-2);
   max-width: 46ch;
+  text-wrap: pretty;
 }
 
 .accent-text { color: var(--accent-text); }
@@ -235,7 +273,7 @@ p {
   letter-spacing: 0.04em;
   color: var(--text-2);
   background: color-mix(in srgb, var(--elevated) 60%, transparent);
-  transition: color 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
+  transition: color 0.25s ease, border-color 0.25s ease, background-color 0.25s ease, transform 0.25s ease;
 }
 
 .chip-accent {
@@ -247,11 +285,13 @@ p {
 .card {
   position: relative;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--bg-2) 80%, transparent);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--elevated) 88%, transparent), color-mix(in srgb, var(--bg-2) 88%, transparent));
+  box-shadow: 0 24px 70px -48px var(--shadow);
   overflow: hidden;
   /* transform/opacity only on hover → composited */
-  transition: border-color 0.3s ease, background-color 0.3s ease;
+  transition: border-color 0.28s ease, background-color 0.28s ease, box-shadow 0.28s ease, transform 0.28s ease;
   will-change: transform;
 }
 
@@ -268,6 +308,7 @@ p {
 
 .card:hover {
   border-color: var(--line-2);
+  box-shadow: 0 32px 90px -54px color-mix(in srgb, var(--accent) 40%, var(--shadow));
 }
 
 .card:hover::after {
@@ -283,9 +324,9 @@ p {
   gap: 0.55rem;
   min-height: 48px;
   padding: 0 1.4rem;
-  border-radius: 999px;
+  border-radius: 14px;
   font-size: 0.92rem;
-  font-weight: 500;
+  font-weight: 650;
   letter-spacing: -0.01em;
   cursor: pointer;
   border: 1px solid transparent;
@@ -298,10 +339,12 @@ p {
 .btn-accent {
   background: var(--accent);
   color: var(--accent-ink);
+  box-shadow: 0 14px 32px -18px var(--accent);
 }
 
 .btn-accent:hover {
   background: var(--accent-2);
+  transform: translateY(-2px);
 }
 
 .btn-ghost {
@@ -313,6 +356,7 @@ p {
 .btn-ghost:hover {
   border-color: var(--text);
   background: color-mix(in srgb, var(--text) 6%, transparent);
+  transform: translateY(-2px);
 }
 
 .icon-btn {
@@ -321,7 +365,7 @@ p {
   justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: 13px;
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--elevated) 50%, transparent);
   color: var(--text-2);
@@ -335,15 +379,19 @@ p {
   transform: translateY(-2px);
 }
 
+.icon-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
 /* Inputs */
 .field {
   width: 100%;
   padding: 0.95rem 1.1rem;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--elevated) 55%, transparent);
   color: var(--text);
-  transition: border-color 0.25s ease, background-color 0.25s ease;
+  transition: border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
   outline: none;
 }
 
@@ -352,6 +400,11 @@ p {
 .field:focus {
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);
   background: color-mix(in srgb, var(--elevated) 80%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.field:hover {
+  border-color: var(--line-2);
 }
 
 /* Live availability dot with composited ring pulse */
@@ -427,7 +480,7 @@ p {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 9999;
+  z-index: 9997;
   pointer-events: none;
   border-radius: 999px;
   mix-blend-mode: difference;
@@ -445,7 +498,7 @@ p {
   width: 38px;
   height: 38px;
   margin: -19px 0 0 -19px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, white);
 }
 
 @media (hover: none), (pointer: coarse) {
@@ -481,4 +534,19 @@ p {
   }
   .marquee { animation: none; }
   .signal-dot::after { animation: none; }
+}
+
+@media (max-width: 640px) {
+  .section {
+    padding-block: 4.75rem;
+  }
+
+  .display-xl {
+    font-size: clamp(2.2rem, 11.5vw, 3.4rem);
+    letter-spacing: -0.03em;
+  }
+
+  .display-lg {
+    font-size: clamp(1.75rem, 9vw, 2.8rem);
+  }
 }

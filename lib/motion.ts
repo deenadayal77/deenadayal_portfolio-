@@ -62,5 +62,5 @@ export const clipUp: Variants = {
   show: { opacity: 1, y: '0%', transition: { duration: 0.9, ease } },
 };
 
-// Shared viewport config — fire once, a little before fully in view
+// Shared viewport config: fire once, a little before fully in view
 export const viewport = { once: true, margin: '0px 0px -12% 0px' } as const;

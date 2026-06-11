@@ -31,7 +31,7 @@ export default function Stack() {
         <div className="mt-12 border-t border-line">
           {groups.map((g) => (
             <Reveal key={g.label} variants={riseSmall}>
-              <div className="grid items-center gap-3 border-b border-line py-5 sm:grid-cols-[180px_1fr] sm:gap-8">
+              <div className="grid items-center gap-3 border-b border-line py-5 transition-colors duration-300 hover:bg-[color-mix(in_srgb,var(--elevated)_30%,transparent)] sm:grid-cols-[180px_1fr] sm:gap-8">
                 <span className="mono text-sm uppercase tracking-wider text-3">{g.label}</span>
                 <div className="flex flex-wrap gap-2">
                   {g.items.map((s) => (
@@ -55,7 +55,7 @@ export default function Stack() {
             <div className="space-y-px overflow-hidden rounded-xl border border-line bg-line">
               {certifications.map((c) => (
                 <Reveal key={c.title} variants={riseSmall}>
-                  <div className="flex items-baseline justify-between gap-4 bg-bg-2 p-4">
+                  <div className="flex items-baseline justify-between gap-4 bg-bg-2 p-4 transition-colors duration-300 hover:bg-bg-3">
                     <div>
                       <p className="font-medium">{c.title}</p>
                       <p className="text-sm text-3">{c.issuer}</p>
@@ -77,9 +77,9 @@ export default function Stack() {
             <div className="space-y-px overflow-hidden rounded-xl border border-line bg-line">
               {achievements.map((a) => (
                 <Reveal key={a.title} variants={riseSmall}>
-                  <div className="bg-bg-2 p-4">
+                  <div className="bg-bg-2 p-4 transition-colors duration-300 hover:bg-bg-3">
                     <p className="font-medium">{a.title}</p>
-                    <p className="text-sm text-3">{a.issuer} · {a.description}</p>
+                    <p className="text-sm text-3">{a.issuer} - {a.description}</p>
                   </div>
                 </Reveal>
               ))}

@@ -53,7 +53,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-line pt-6 sm:flex-row">
-          <p className="mono text-xs text-3">© {year} {personalInfo.name} — built with intent.</p>
+          <p className="mono text-xs text-3">Copyright {year} {personalInfo.name} - built with intent.</p>
           <a href="#top" className="group flex items-center gap-2 text-sm text-2 hover:text-ink" data-cursor="hover">
             Back to top
             <span className="icon-btn !h-9 !w-9 transition-transform group-hover:-translate-y-0.5">

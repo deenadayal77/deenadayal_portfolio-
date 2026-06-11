@@ -30,7 +30,7 @@ export default function ProjectModal({ project, onClose }: ProjectModalProps) {
         <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center sm:p-6">
           <motion.div
             className="absolute inset-0"
-            style={{ background: 'color-mix(in srgb, var(--bg) 70%, rgba(0,0,0,0.6))', backdropFilter: 'blur(8px)' }}
+            style={{ background: 'color-mix(in srgb, var(--bg) 78%, rgba(0,0,0,0.55))', backdropFilter: 'blur(16px)' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -42,13 +42,13 @@ export default function ProjectModal({ project, onClose }: ProjectModalProps) {
             role="dialog"
             aria-modal="true"
             aria-label={`${project.title} case study`}
-            className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-line bg-bg-2 sm:rounded-3xl"
+            className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-[24px] border border-line bg-bg-2 shadow-[0_34px_120px_-54px_var(--shadow)] sm:rounded-[24px]"
             initial={{ opacity: 0, y: 40, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 280, damping: 30 }}
           >
-            <div className="flex items-center justify-between border-b border-line px-6 py-4">
+            <div className="flex items-center justify-between border-b border-line bg-[color-mix(in_srgb,var(--elevated)_72%,transparent)] px-6 py-4">
               <span className="chip chip-accent">{project.status}</span>
               <button onClick={onClose} className="icon-btn !h-10 !w-10" aria-label="Close">
                 <X size={18} />

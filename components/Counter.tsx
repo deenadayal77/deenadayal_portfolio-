@@ -13,7 +13,7 @@ interface CounterProps {
 
 /**
  * Counts up to `value` when scrolled into view.
- * Drives a single state value via rAF with an eased curve — cheap, smooth.
+ * Drives a single state value via rAF with an eased curve: cheap, smooth.
  */
 export default function Counter({ value, suffix = '', prefix = '', duration = 1.6, className }: CounterProps) {
   const ref = useRef<HTMLSpanElement>(null);

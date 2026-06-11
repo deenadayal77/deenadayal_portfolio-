@@ -8,9 +8,9 @@ import { rise, riseSmall } from '@/lib/motion';
 const facts = [
   ['Role', 'AI Workflow Engineer'],
   ['Based in', personalInfo.location.split(',').slice(0, 2).join(', ')],
-  ['Education', 'CSE · PES College of Engineering'],
+  ['Education', 'CSE - PES College of Engineering'],
   ['Currently', 'Automation @ DemandNXT'],
-  ['Leadership', 'President · ISTE Student Chapter'],
+  ['Leadership', 'President - ISTE Student Chapter'],
 ];
 
 const pillars = [
@@ -27,12 +27,12 @@ export default function AboutSection() {
           <span className="kicker">About</span>
         </Reveal>
 
-        <div className="mt-10 grid gap-x-16 gap-y-12 lg:grid-cols-[1.5fr_1fr]">
+        <div className="mt-10 grid gap-x-16 gap-y-12 lg:grid-cols-[1.42fr_0.9fr]">
           {/* statement */}
           <div>
             <Reveal variants={rise}>
-              <p className="display-lg text-[clamp(1.7rem,3.4vw,2.9rem)] leading-[1.08]">
-                I&apos;m a CS engineer who likes the unglamorous part of software —
+              <p className="display-lg max-w-[22ch] text-[clamp(1.6rem,3.2vw,2.8rem)] leading-[1.1]">
+                I&apos;m a CS engineer who likes the unglamorous part of software -
                 making systems <span className="accent-text">talk to each other</span> and
                 keep working when no one&apos;s watching.
               </p>
@@ -41,7 +41,7 @@ export default function AboutSection() {
             <Stagger className="mt-8 space-y-5 text-2" gap={0.12}>
               <Reveal variants={riseSmall}>
                 <p>
-                  Today I design AI-powered workflow systems at DemandNXT — reducing manual
+                  Today I design AI-powered workflow systems at DemandNXT - reducing manual
                   operations, improving lead quality, and connecting business tools through
                   automation that&apos;s built to be resilient, not just clever.
                 </p>
@@ -61,8 +61,10 @@ export default function AboutSection() {
                 const Icon = p.icon;
                 return (
                   <Reveal key={p.title} variants={rise}>
-                    <div className="card h-full p-5" data-cursor="hover">
-                      <Icon size={22} className="accent-text" />
+                    <div className="card h-full p-5 transition-transform duration-300 hover:-translate-y-1" data-cursor="hover">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-[12px] border border-line bg-[var(--accent-soft)]">
+                        <Icon size={20} className="accent-text" />
+                      </span>
                       <h3 className="mt-4 text-lg font-semibold">{p.title}</h3>
                       <p className="mt-1.5 text-sm text-2">{p.body}</p>
                     </div>
@@ -81,7 +83,7 @@ export default function AboutSection() {
               </div>
               <dl className="divide-y divide-[var(--line)]">
                 {facts.map(([k, v]) => (
-                  <div key={k} className="flex items-baseline justify-between gap-4 px-5 py-3.5">
+                  <div key={k} className="flex items-baseline justify-between gap-4 px-5 py-4 transition-colors duration-300 hover:bg-bg-3">
                     <dt className="mono text-xs uppercase tracking-wider text-3">{k}</dt>
                     <dd className="text-right text-sm font-medium">{v}</dd>
                   </div>

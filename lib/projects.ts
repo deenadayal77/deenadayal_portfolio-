@@ -36,7 +36,7 @@ export const projects: Project[] = [
       { title: 'Error Handling', description: 'Added retry logic and graceful failure handling to ensure pipeline resilience.' }
     ],
     impact: 'Processes 100+ leads daily with 95%+ enrichment success rate. Saves 15+ hours/week for sales ops. Enables 40%+ higher lead qualification rates.',
-    date: 'Apr 2026 – May 2026',
+    date: 'Apr 2026 - May 2026',
     role: 'AI Workflow Engineer',
     status: 'Production'
   },
@@ -55,8 +55,8 @@ export const projects: Project[] = [
       { title: 'Bounce Management', description: 'Automatic bounce detection maintains sender reputation.' },
       { title: 'Analytics', description: 'Real-time tracking connected to CRM.' }
     ],
-    impact: '4 hrs → 15 mins launch time. 10k+ emails/day. 35%+ higher CTR.',
-    date: 'Mar 2026 – Apr 2026',
+    impact: '4 hrs to 15 mins launch time. 10k+ emails/day. 35%+ higher CTR.',
+    date: 'Mar 2026 - Apr 2026',
     role: 'AI Workflow Engineer',
     status: 'Production'
   },
@@ -76,7 +76,7 @@ export const projects: Project[] = [
       { title: 'Analytics', description: 'Segment-level metrics track campaign effectiveness.' }
     ],
     impact: '45%+ engagement boost. 60%+ fewer unsubscribes. 10 mins to launch.',
-    date: 'Feb 2026 – Mar 2026',
+    date: 'Feb 2026 - Mar 2026',
     role: 'AI Workflow Engineer',
     status: 'Production'
   },
@@ -96,7 +96,7 @@ export const projects: Project[] = [
       { title: 'Safety', description: 'Sentiment analysis prevents posting in hostile threads.' }
     ],
     impact: '20+ posts/day. 98%+ positive response. 3x subscriber growth.',
-    date: 'Jan 2026 – Feb 2026',
+    date: 'Jan 2026 - Feb 2026',
     role: 'AI Workflow Engineer',
     status: 'Production'
   },
@@ -116,7 +116,7 @@ export const projects: Project[] = [
       { title: 'Simple Language', description: 'Prioritized understanding over technical accuracy.' }
     ],
     impact: 'Used by 500+ patients. Reduces healthcare anxiety. Improves treatment outcomes.',
-    date: 'Mar 2024 – Present',
+    date: 'Mar 2024 - Present',
     role: 'Full Stack Developer',
     status: 'Live'
   },
@@ -136,7 +136,7 @@ export const projects: Project[] = [
       { title: 'Search Optimization', description: 'Sub-second queries on 100k+ listings.' }
     ],
     impact: 'Saves users 5+ hours per trip. 10k+ bookings processed. Higher confidence in booking decisions.',
-    date: 'Dec 2023 – Feb 2024',
+    date: 'Dec 2023 - Feb 2024',
     role: 'Full Stack Developer',
     status: 'Live'
   },
@@ -156,7 +156,7 @@ export const projects: Project[] = [
       { title: 'Community', description: 'Built-in engagement without gamification.' }
     ],
     impact: '1000+ stories. 50k+ monthly readers. Zero ads. 100% writer-friendly.',
-    date: 'Dec 2023 – Feb 2024',
+    date: 'Dec 2023 - Feb 2024',
     role: 'Full Stack Developer',
     status: 'Live'
   },
@@ -176,7 +176,7 @@ export const projects: Project[] = [
       { title: 'Intent ML', description: 'ML-based detection for natural scalability.' }
     ],
     impact: '70% faster response time. 1000+ queries/day. 90%+ first-contact resolution.',
-    date: 'Aug 2023 – Nov 2023',
+    date: 'Aug 2023 - Nov 2023',
     role: 'AI/ML Developer',
     status: 'Live'
   },

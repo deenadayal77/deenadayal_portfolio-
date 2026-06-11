@@ -44,25 +44,27 @@ export default function Experience() {
                     <span className="signal-dot" />
                   </span>
 
-                  <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:justify-between">
-                    <span className="mono text-xs text-3">{job.period}</span>
-                    <span className="chip w-fit">{job.type}</span>
-                  </div>
+                  <div className="card p-5 sm:p-6">
+                    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:justify-between">
+                      <span className="mono text-xs text-3">{job.period}</span>
+                      <span className="chip w-fit">{job.type}</span>
+                    </div>
 
-                  <h3 className="mt-3 text-2xl font-semibold leading-tight">{job.title}</h3>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                    <span className="font-medium accent-text">{job.company}</span>
-                    <span className="flex items-center gap-1 text-3">
-                      <MapPin size={13} /> {job.location}
-                    </span>
-                  </div>
+                    <h3 className="mt-3 text-2xl font-semibold leading-tight">{job.title}</h3>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                      <span className="font-medium accent-text">{job.company}</span>
+                      <span className="flex items-center gap-1 text-3">
+                        <MapPin size={13} /> {job.location}
+                      </span>
+                    </div>
 
-                  <p className="mt-4 max-w-2xl text-2">{job.description}</p>
+                    <p className="mt-4 max-w-2xl text-2">{job.description}</p>
 
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {job.responsibilities.map((r) => (
-                      <span key={r} className="chip">{r}</span>
-                    ))}
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      {job.responsibilities.map((r) => (
+                        <span key={r} className="chip">{r}</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </Reveal>

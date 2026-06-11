@@ -10,13 +10,13 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
         <h2 className="display-lg text-[clamp(2rem,5vw,3.25rem)]">{project.title}</h2>
         <p className="lead max-w-none text-base">{project.description}</p>
 
-        <div className="grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-line bg-line">
+        <div className="grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-3">
           {[
             ['Date', project.date],
             ['Role', project.role],
             ['Status', project.status],
           ].map(([k, v]) => (
-            <div key={k} className="bg-bg-2 px-4 py-3">
+            <div key={k} className="bg-bg-2 px-4 py-3 transition-colors duration-300 hover:bg-bg-3">
               <p className="eyebrow">{k}</p>
               <p className="mt-1 text-sm font-medium">{v}</p>
             </div>
@@ -35,15 +35,15 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
         </div>
       </header>
 
-      <Block label="01 — The Problem">
+      <Block label="01 - The Problem">
         <p className="text-2">{project.problem}</p>
       </Block>
 
-      <Block label="02 — What I Built">
+      <Block label="02 - What I Built">
         <p className="text-2">{project.whatBuilt}</p>
       </Block>
 
-      <Block label="03 — How It's Wired">
+      <Block label="03 - How It's Wired">
         <div className="flex flex-wrap gap-2">
           {project.techStack.map((t) => (
             <span key={t} className="chip">{t}</span>
@@ -51,10 +51,10 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
         </div>
       </Block>
 
-      <Block label="04 — The Judgment Calls">
+      <Block label="04 - The Judgment Calls">
         <div className="space-y-px overflow-hidden rounded-xl border border-line bg-line">
           {project.judgmentCalls.map((c) => (
-            <div key={c.title} className="bg-bg-2 p-4">
+            <div key={c.title} className="bg-bg-2 p-4 transition-colors duration-300 hover:bg-bg-3">
               <h4 className="font-semibold accent-text">{c.title}</h4>
               <p className="mt-1 text-sm text-2">{c.description}</p>
             </div>
@@ -62,7 +62,7 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
         </div>
       </Block>
 
-      <Block label="05 — What It Changed">
+      <Block label="05 - What It Changed">
         <div className="card bg-[var(--accent-soft)] p-5">
           <p className="font-medium">{project.impact}</p>
         </div>

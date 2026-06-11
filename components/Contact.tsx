@@ -22,7 +22,7 @@ export default function Contact() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const subject = encodeURIComponent(`Portfolio enquiry from ${form.name || 'someone'}`);
-    const body = encodeURIComponent(`${form.message}\n\n— ${form.name} (${form.email})`);
+    const body = encodeURIComponent(`${form.message}\n\n- ${form.name} (${form.email})`);
     window.location.href = `mailto:${personalInfo.email}?subject=${subject}&body=${body}`;
     setSent(true);
     setTimeout(() => setSent(false), 4000);
@@ -52,7 +52,7 @@ export default function Contact() {
             <div className="overflow-hidden rounded-2xl border border-line">
               {channels.map(({ icon: Icon, label, value, href }) => {
                 const inner = (
-                  <div className="group flex items-center gap-4 border-b border-line bg-bg-2 px-5 py-4 transition-colors last:border-b-0 hover:bg-bg-3">
+                  <div className="group flex items-center gap-4 border-b border-line bg-bg-2 px-5 py-4 transition-all duration-300 last:border-b-0 hover:bg-bg-3">
                     <span className="icon-btn !h-10 !w-10 shrink-0">
                       <Icon size={17} />
                     </span>
@@ -83,14 +83,18 @@ export default function Contact() {
           <Reveal variants={rise} delay={0.05}>
             <form onSubmit={submit} className="card space-y-4 p-6 sm:p-7">
               <div className="grid gap-4 sm:grid-cols-2">
+                <label className="sr-only" htmlFor="contact-name">Your name</label>
                 <input
+                  id="contact-name"
                   className="field"
                   placeholder="Your name"
                   required
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
+                <label className="sr-only" htmlFor="contact-email">Email address</label>
                 <input
+                  id="contact-email"
                   className="field"
                   type="email"
                   placeholder="your@email.com"
@@ -99,7 +103,9 @@ export default function Contact() {
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                 />
               </div>
+              <label className="sr-only" htmlFor="contact-message">Project message</label>
               <textarea
+                id="contact-message"
                 className="field resize-none"
                 rows={5}
                 placeholder="What are you building?"
@@ -112,7 +118,7 @@ export default function Contact() {
                   <AnimatePresence mode="wait" initial={false}>
                     {sent ? (
                       <motion.span key="sent" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="flex items-center gap-2">
-                        <Check size={18} /> Opening your mail client…
+                        <Check size={18} /> Opening your mail client...
                       </motion.span>
                     ) : (
                       <motion.span key="send" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="flex items-center gap-2">

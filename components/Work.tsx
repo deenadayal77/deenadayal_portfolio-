@@ -54,7 +54,7 @@ export default function Work() {
             </Reveal>
             <Reveal variants={rise} delay={0.1}>
               <p className="lead mt-4 text-base">
-                Every card opens a short case study — the problem, what I built, the judgment
+                Every card opens a short case study - the problem, what I built, the judgment
                 calls, and what changed.
               </p>
             </Reveal>
@@ -62,19 +62,19 @@ export default function Work() {
 
           {/* filters */}
           <Reveal variants={rise} delay={0.1}>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5 rounded-[16px] border border-line bg-[color-mix(in_srgb,var(--elevated)_58%,transparent)] p-1.5 backdrop-blur">
               {filters.map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
                   data-cursor="hover"
-                  className="relative rounded-full px-4 py-2 text-sm transition-colors"
+                  className="relative rounded-[12px] px-4 py-2 text-sm font-medium transition-colors hover:text-ink"
                   style={{ color: filter === f ? 'var(--accent-ink)' : 'var(--text-2)' }}
                 >
                   {filter === f && (
                     <motion.span
                       layoutId="filter-pill"
-                      className="absolute inset-0 -z-10 rounded-full"
+                      className="absolute inset-0 -z-10 rounded-[12px]"
                       style={{ background: 'var(--accent)' }}
                       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     />

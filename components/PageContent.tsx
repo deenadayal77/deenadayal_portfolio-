@@ -13,9 +13,12 @@ import SiteChrome from '@/components/SiteChrome';
 export default function PageContent() {
   return (
     <>
+      <a href="#content" className="skip-link">
+        Skip to content
+      </a>
       <SiteChrome />
       <Navbar />
-      <main>
+      <main id="content">
         <Hero />
         <AboutSection />
         <Work />

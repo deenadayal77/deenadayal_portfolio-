@@ -10,7 +10,7 @@ interface MarqueeProps {
 
 /**
  * Seamless infinite ticker. Content is duplicated and translated -50%
- * via a CSS keyframe (transform only) → smooth, pauses on hover.
+ * via a CSS keyframe (transform only): smooth, pauses on hover.
  */
 export default function Marquee({ children, reverse, className }: MarqueeProps) {
   return (

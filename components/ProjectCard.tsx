@@ -44,12 +44,12 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
         </span>
       </div>
 
-      <h3 className="relative z-10 mt-5 text-2xl font-semibold leading-tight transition-colors group-hover:text-[var(--accent-text)]">
+      <h3 className="relative z-10 mt-7 text-2xl font-semibold leading-tight transition-colors group-hover:text-[var(--accent-text)]">
         {project.title}
       </h3>
       <p className="relative z-10 mt-3 flex-1 text-sm leading-relaxed text-2">{project.description}</p>
 
-      <div className="relative z-10 mt-6 flex flex-wrap gap-2">
+      <div className="relative z-10 mt-7 flex flex-wrap gap-2">
         {project.tags.slice(0, 3).map((t) => (
           <span key={t} className="chip">{t}</span>
         ))}
@@ -68,7 +68,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
           >
             <Github size={17} />
           </a>
-          <span className="flex items-center gap-1 text-sm text-2 transition-colors group-hover:text-[var(--accent-text)]">
+          <span className="flex items-center gap-1 text-sm font-medium text-2 transition-colors group-hover:text-[var(--accent-text)]">
             Case study
             <ArrowUpRight size={16} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </span>

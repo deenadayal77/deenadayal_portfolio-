@@ -18,12 +18,12 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Deena Dayal B K — AI Workflow Engineer & Full-Stack Developer',
+  title: 'Deena Dayal B K - AI Workflow Engineer & Full-Stack Developer',
   description:
     'Deena Dayal B K builds AI-powered automation systems and full-stack products that turn manual work into reliable, measurable workflows. Based in Bengaluru.',
   metadataBase: new URL('https://deenadayal.dev'),
   openGraph: {
-    title: 'Deena Dayal B K — AI Workflow Engineer',
+    title: 'Deena Dayal B K - AI Workflow Engineer',
     description: 'I build AI systems that turn manual work into reliable automation.',
     type: 'website',
   },
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#0a0b0d',
+  themeColor: '#080b10',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

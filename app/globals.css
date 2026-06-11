@@ -150,8 +150,8 @@ select {
 
 h1, h2, h3, h4, h5, h6 {
   margin: 0;
-  font-weight: 600;
-  letter-spacing: -0.03em;
+  font-weight: 700;
+  letter-spacing: -0.032em;
   line-height: 1.02;
   text-wrap: balance;
 }
@@ -225,16 +225,17 @@ p {
 }
 
 .display-xl {
-  font-size: clamp(2.5rem, 5vw, 5rem);
-  line-height: 0.93;
-  letter-spacing: -0.04em;
-  font-weight: 600;
+  font-size: clamp(2.4rem, 4.8vw, 4.75rem);
+  line-height: 1.0;
+  letter-spacing: -0.038em;
+  font-weight: 800;
 }
 
 .display-lg {
-  font-size: clamp(1.9rem, 3.6vw, 3.5rem);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
+  font-size: clamp(1.85rem, 3.4vw, 3.25rem);
+  line-height: 1.0;
+  letter-spacing: -0.036em;
+  font-weight: 700;
 }
 
 .lead {

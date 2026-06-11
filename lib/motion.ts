@@ -62,5 +62,16 @@ export const clipUp: Variants = {
   show: { opacity: 1, y: '0%', transition: { duration: 0.9, ease } },
 };
 
+// Card entrance: scale + rise + opacity — for bento/grid cards
+export const cardReveal: Variants = {
+  hidden: { opacity: 0, y: 20, scale: 0.97 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.65, ease },
+  },
+};
+
 // Shared viewport config: fire once, a little before fully in view
 export const viewport = { once: true, margin: '0px 0px -12% 0px' } as const;

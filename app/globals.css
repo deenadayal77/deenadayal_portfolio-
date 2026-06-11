@@ -291,7 +291,7 @@ p {
   box-shadow: 0 24px 70px -48px var(--shadow);
   overflow: hidden;
   /* transform/opacity only on hover → composited */
-  transition: border-color 0.28s ease, background-color 0.28s ease, box-shadow 0.28s ease, transform 0.28s ease;
+  transition: border-color 0.28s ease, background-color 0.28s ease, box-shadow 0.28s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
 }
 
@@ -309,6 +309,11 @@ p {
 .card:hover {
   border-color: var(--line-2);
   box-shadow: 0 32px 90px -54px color-mix(in srgb, var(--accent) 40%, var(--shadow));
+}
+
+/* Only lift non-framer-motion cards via CSS (Framer-controlled ones use whileHover instead) */
+.card:not([data-framer-motion]):hover {
+  transform: translateY(-3px);
 }
 
 .card:hover::after {

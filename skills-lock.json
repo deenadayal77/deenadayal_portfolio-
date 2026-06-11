@@ -25,6 +25,11 @@
       "skillPath": "skills/taste-skill-v1/SKILL.md",
       "computedHash": "8d59c96751feacf88f341a43151eae6f4fd748978884c4552293b8841573d776"
     },
+    "frontend-design": {
+      "source": "smithery.ai",
+      "sourceType": "well-known",
+      "computedHash": "a2561f129b0806ee58af02521f5845f2bc5474003d2227109ce9166d261c3ae0"
+    },
     "full-output-enforcement": {
       "source": "Leonxlnx/taste-skill",
       "sourceType": "github",

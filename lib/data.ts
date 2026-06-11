@@ -1,6 +1,6 @@
 export const personalInfo = {
   name: 'Deena Dayal B K',
-  title: 'Full-Stack Developer & AI Enthusiast',
+  title: 'Full-Stack Developer and AI Workflow Engineer',
   email: 'dayalbk77@gmail.com',
   phone: '+91 74111 39276',
   location: 'Bengaluru, Karnataka, India',
@@ -14,29 +14,29 @@ export const experience = [
     title: 'AI Workflow Engineer',
     company: 'DemandNXT',
     location: 'Bengaluru',
-    period: 'Mar 2026 – Present',
+    period: 'Mar 2026 - Present',
     type: 'Full-Time',
-    description: 'Designing and implementing AI-powered automation workflows, optimizing business processes with generative AI.',
-    responsibilities: ['AI Workflow Design', 'GenAI Integration', 'Process Automation', 'LLM Optimization'],
+    description: 'Designing AI-powered workflow systems that reduce manual operations, improve lead quality, and connect business tools through reliable automation.',
+    responsibilities: ['Workflow Design', 'API Integration', 'Process Automation', 'LLM Optimization'],
   },
   {
     id: 2,
     title: 'Python Full-Stack Developer with Generative AI',
     company: 'Dhee Coding Labs',
     location: 'Bengaluru',
-    period: 'Jan 2026 – Mar 2026',
+    period: 'Jan 2026 - Mar 2026',
     type: 'Internship',
-    description: 'Built full-stack solutions with generative AI integration and backend API development.',
+    description: 'Built full-stack software with generative AI features, backend APIs, and structured data flows for practical business use cases.',
     responsibilities: ['Full-Stack Development', 'GenAI Integration', 'API Design', 'Database Management'],
   },
   {
     id: 3,
-    title: 'President – ISTE Student Chapter',
+    title: 'President - ISTE Student Chapter',
     company: 'PES College of Engineering',
     location: 'Mandya, Karnataka',
-    period: 'Sep 2025 – Present',
+    period: 'Sep 2025 - Present',
     type: 'Leadership',
-    description: 'Organized 19th ISTE Karnataka Convention with 800+ participants, leading strategic initiatives.',
+    description: 'Led student teams and organized technical programs including the 19th ISTE Karnataka Convention with 800+ participants.',
     responsibilities: ['Event Organization', 'Team Leadership', 'Strategic Planning', 'Student Engagement'],
   },
 ];
@@ -57,6 +57,6 @@ export const certifications = [
 ];
 
 export const achievements = [
-  { title: 'Runner-up – Fin-a-thon', issuer: 'Puttannaiah Foundation', description: 'Financial technology solution' },
-  { title: 'Runner-up – Inovista Pitching', issuer: 'PESCE', description: 'Innovative business idea' },
+  { title: 'Runner-up - Fin-a-thon', issuer: 'Puttannaiah Foundation', description: 'Financial technology solution' },
+  { title: 'Runner-up - Inovista Pitching', issuer: 'PESCE', description: 'Innovative business idea' },
 ];

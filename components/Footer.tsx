@@ -1,100 +1,65 @@
 'use client';
-import { Github, Linkedin, Mail, Heart, ArrowUpRight } from 'lucide-react';
+
+import { ArrowUp, Github, Linkedin, Mail } from 'lucide-react';
 import { personalInfo } from '@/lib/data';
+
+const nav = [
+  { label: 'About', href: '#about' },
+  { label: 'Work', href: '#work' },
+  { label: 'Experience', href: '#experience' },
+  { label: 'Stack', href: '#stack' },
+  { label: 'Contact', href: '#contact' },
+];
+
+const socials = [
+  { icon: Linkedin, href: personalInfo.linkedin, label: 'LinkedIn' },
+  { icon: Github, href: personalInfo.github, label: 'GitHub' },
+  { icon: Mail, href: `mailto:${personalInfo.email}`, label: 'Email' },
+];
 
 export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative border-t border-white/10 bg-gradient-dark">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          {/* Brand */}
-          <div>
-            <h3 className="text-2xl font-bold gradient-text mb-2">deena.</h3>
-            <p className="text-white/60 text-sm leading-relaxed">{personalInfo.title}</p>
+    <footer className="relative border-t border-line">
+      <div className="shell py-16">
+        <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
+          <div className="max-w-sm">
+            <a href="#top" className="flex items-center gap-2.5">
+              <span className="signal-dot" />
+              <span className="text-2xl font-semibold tracking-tight">
+                deena<span className="accent-text">.</span>
+              </span>
+            </a>
+            <p className="mt-4 text-sm text-2">{personalInfo.title}</p>
+            <p className="mono mt-3 text-xs text-3">{personalInfo.location}</p>
           </div>
 
-          {/* Navigation */}
-          <div>
-            <h4 className="font-semibold mb-4">Navigation</h4>
-            <ul className="space-y-2">
-              {['Projects', 'Experience', 'Skills', 'About'].map((link) => (
-                <li key={link}>
-                  <a
-                    href={`#${link.toLowerCase()}`}
-                    className="text-white/60 hover:text-primary text-sm transition-colors flex items-center gap-1 group"
-                  >
-                    {link}
-                    <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <nav className="flex flex-wrap gap-x-8 gap-y-2">
+            {nav.map((l) => (
+              <a key={l.href} href={l.href} className="link-underline text-sm text-2 hover:text-ink" data-cursor="hover">
+                {l.label}
+              </a>
+            ))}
+          </nav>
 
-          {/* Resources */}
-          <div>
-            <h4 className="font-semibold mb-4">Resources</h4>
-            <ul className="space-y-2">
-              <li>
-                <a href={personalInfo.github} target="_blank" className="text-white/60 hover:text-primary text-sm transition-colors flex items-center gap-1 group">
-                  GitHub
-                  <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                </a>
-              </li>
-              <li>
-                <a href={personalInfo.linkedin} target="_blank" className="text-white/60 hover:text-primary text-sm transition-colors flex items-center gap-1 group">
-                  LinkedIn
-                  <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                </a>
-              </li>
-              <li>
-                <a href={`mailto:${personalInfo.email}`} className="text-white/60 hover:text-primary text-sm transition-colors flex items-center gap-1 group">
-                  Email
-                  <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Social */}
-          <div>
-            <h4 className="font-semibold mb-4">Connect</h4>
-            <div className="flex gap-3">
-              <a
-                href={personalInfo.linkedin}
-                target="_blank"
-                className="p-3 glass-effect rounded-lg hover:border-primary/70 hover:shadow-glow transition-all duration-300 hover:scale-110"
-                aria-label="LinkedIn"
-              >
-                <Linkedin size={18} className="text-primary" />
+          <div className="flex items-center gap-2">
+            {socials.map(({ icon: Icon, href, label }) => (
+              <a key={label} href={href} target={label === 'Email' ? undefined : '_blank'} rel="noreferrer" className="icon-btn" aria-label={label}>
+                <Icon size={18} />
               </a>
-              <a
-                href={personalInfo.github}
-                target="_blank"
-                className="p-3 glass-effect rounded-lg hover:border-primary/70 hover:shadow-glow transition-all duration-300 hover:scale-110"
-                aria-label="GitHub"
-              >
-                <Github size={18} className="text-primary" />
-              </a>
-              <a
-                href={`mailto:${personalInfo.email}`}
-                className="p-3 glass-effect rounded-lg hover:border-primary/70 hover:shadow-glow transition-all duration-300 hover:scale-110"
-                aria-label="Email"
-              >
-                <Mail size={18} className="text-primary" />
-              </a>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="border-t border-white/10 my-8 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-white/60 text-sm">© {year} {personalInfo.name}. All rights reserved.</p>
-          <p className="text-white/60 text-sm flex items-center gap-2">
-            Made with <Heart size={16} className="text-primary animate-pulse" /> for developers
-          </p>
+        <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-line pt-6 sm:flex-row">
+          <p className="mono text-xs text-3">© {year} {personalInfo.name} — built with intent.</p>
+          <a href="#top" className="group flex items-center gap-2 text-sm text-2 hover:text-ink" data-cursor="hover">
+            Back to top
+            <span className="icon-btn !h-9 !w-9 transition-transform group-hover:-translate-y-0.5">
+              <ArrowUp size={16} />
+            </span>
+          </a>
         </div>
       </div>
     </footer>

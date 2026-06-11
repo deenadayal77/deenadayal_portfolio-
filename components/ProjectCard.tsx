@@ -1,76 +1,81 @@
 'use client';
 
-import { Project } from '@/lib/projects';
-import { ExternalLink, Github } from 'lucide-react';
+import { forwardRef } from 'react';
+import { ArrowUpRight, Github } from 'lucide-react';
+import { motion } from 'framer-motion';
+import type { Project } from '@/lib/projects';
+import { ease } from '@/lib/motion';
 
 interface ProjectCardProps {
   project: Project;
-  onOpenModal: (project: Project) => void;
+  index: number;
+  onOpen: (p: Project) => void;
 }
 
-export default function ProjectCard({ project, onOpenModal }: ProjectCardProps) {
+const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCard(
+  { project, index, onOpen },
+  ref
+) {
+  // cursor-follow spotlight: only writes CSS vars, no layout/repaint of children
+  const onMove = (e: React.PointerEvent<HTMLElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
+    e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
+  };
+
   return (
-    <div
-      onClick={() => onOpenModal(project)}
-      className="neon-border p-6 rounded-2xl bg-[var(--bg-secondary)]/50 cursor-pointer hover:scale-105 transition-all duration-300 hover:bg-[var(--accent)]/10 group h-full flex flex-col justify-between"
-      style={{
-        animation: `slideInLeft 0.6s ease-out forwards`,
-      }}
+    <motion.article
+      ref={ref}
+      layout
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.45, ease }}
+      onPointerMove={onMove}
+      onClick={() => onOpen(project)}
+      data-cursor="hover"
+      className="card group flex cursor-pointer flex-col p-6 transition-transform duration-300 will-change-transform hover:-translate-y-1.5"
     >
-      {/* Tag */}
-      <div className="mb-4">
-        <span className="inline-block px-3 py-1 text-xs font-bold text-[var(--accent)] bg-[var(--accent)]/10 border border-[var(--accent)]/30 rounded-full">
+      <div className="relative z-10 flex items-center justify-between">
+        <span className="mono text-sm text-3">{String(index + 1).padStart(2, '0')}</span>
+        <span className="chip chip-accent">
+          <span className="signal-dot !h-1.5 !w-1.5" />
           {project.status}
         </span>
       </div>
 
-      {/* Title & Description */}
-      <div className="flex-1">
-        <h3 className="text-2xl font-black text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors mb-3">
-          {project.title}
-        </h3>
-        <p className="text-[var(--text-secondary)] text-sm leading-relaxed">
-          {project.description}
-        </p>
+      <h3 className="relative z-10 mt-5 text-2xl font-semibold leading-tight transition-colors group-hover:text-[var(--accent-text)]">
+        {project.title}
+      </h3>
+      <p className="relative z-10 mt-3 flex-1 text-sm leading-relaxed text-2">{project.description}</p>
+
+      <div className="relative z-10 mt-6 flex flex-wrap gap-2">
+        {project.tags.slice(0, 3).map((t) => (
+          <span key={t} className="chip">{t}</span>
+        ))}
       </div>
 
-      {/* Tech Stack */}
-      <div className="mt-6 space-y-4">
-        <div className="flex flex-wrap gap-2">
-          {project.tags.slice(0, 3).map((tag) => (
-            <span
-              key={tag}
-              className="px-2 py-1 text-xs bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg border border-[var(--accent)]/20 font-mono"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        {/* Links */}
-        <div className="flex gap-3 pt-4 border-t border-[var(--accent)]/20">
+      <div className="relative z-10 mt-6 flex items-center justify-between border-t border-line pt-4">
+        <span className="mono text-xs text-3">{project.date}</span>
+        <div className="flex items-center gap-3">
           <a
             href={project.github}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-2 text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors text-sm font-semibold"
+            className="text-2 transition-colors hover:text-[var(--accent-text)]"
+            aria-label="View source"
           >
-            <Github size={16} />
-            Code
+            <Github size={17} />
           </a>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenModal(project);
-            }}
-            className="flex items-center gap-2 text-[var(--accent)] hover:text-[var(--accent-light)] transition-colors text-sm font-semibold"
-          >
-            <ExternalLink size={16} />
-            Details
-          </button>
+          <span className="flex items-center gap-1 text-sm text-2 transition-colors group-hover:text-[var(--accent-text)]">
+            Case study
+            <ArrowUpRight size={16} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </span>
         </div>
       </div>
-    </div>
+    </motion.article>
   );
-}
+});
+
+export default ProjectCard;

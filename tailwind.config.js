@@ -4,26 +4,24 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#06B6D4',
-        dark: '#0f172a',
-        surface: '#1e293b',
-        accent: '#06B6D4',
+        bg: 'var(--bg)',
+        'bg-2': 'var(--bg-2)',
+        'bg-3': 'var(--bg-3)',
+        elevated: 'var(--elevated)',
+        ink: 'var(--text)',
+        'ink-2': 'var(--text-2)',
+        'ink-3': 'var(--text-3)',
+        line: 'var(--line)',
+        'line-2': 'var(--line-2)',
+        accent: 'var(--accent)',
+        'accent-text': 'var(--accent-text)',
       },
       fontFamily: {
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
-        display: ['Space Grotesk', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
       },
-      backgroundImage: {
-        'gradient-primary': 'linear-gradient(135deg, #06B6D4 0%, #0EA5E9 100%)',
-        'gradient-dark': 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-      },
-      boxShadow: {
-        glow: '0 0 30px rgba(6, 182, 212, 0.4)',
-        'glow-lg': '0 0 50px rgba(6, 182, 212, 0.6)',
-      },
-      animation: {
-        'fade-in-up': 'fadeInUp 0.7s ease-out forwards',
-        'glow': 'glow 3s ease-in-out infinite',
+      maxWidth: {
+        shell: '1240px',
       },
     },
   },

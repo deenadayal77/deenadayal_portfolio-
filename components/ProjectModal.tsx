@@ -1,44 +1,65 @@
 'use client';
 
-import { Project } from '@/lib/projects';
+import { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import type { Project } from '@/lib/projects';
 import ProjectDetail from './ProjectDetail';
 
 interface ProjectModalProps {
   project: Project | null;
-  isOpen: boolean;
   onClose: () => void;
 }
 
-export default function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
-  if (!isOpen || !project) return null;
+export default function ProjectModal({ project, onClose }: ProjectModalProps) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    if (project) {
+      document.addEventListener('keydown', onKey);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [project, onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-        onClick={onClose}
-        style={{ animation: 'fadeInUp 0.3s ease-out' }}
-      />
+    <AnimatePresence>
+      {project && (
+        <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center sm:p-6">
+          <motion.div
+            className="absolute inset-0"
+            style={{ background: 'color-mix(in srgb, var(--bg) 70%, rgba(0,0,0,0.6))', backdropFilter: 'blur(8px)' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            onClick={onClose}
+          />
 
-      {/* Modal */}
-      <div
-        className="relative w-full max-w-4xl bg-[var(--bg-secondary)] neon-border rounded-2xl p-8 max-h-[90vh] overflow-hidden"
-        style={{ animation: 'slideInFromBottom 0.4s ease-out' }}
-      >
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-6 right-6 p-2 hover:bg-[var(--accent)]/20 rounded-lg transition-all"
-          aria-label="Close modal"
-        >
-          <X size={24} className="text-[var(--accent)]" />
-        </button>
-
-        {/* Content */}
-        <ProjectDetail project={project} />
-      </div>
-    </div>
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${project.title} case study`}
+            className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-line bg-bg-2 sm:rounded-3xl"
+            initial={{ opacity: 0, y: 40, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.98 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 30 }}
+          >
+            <div className="flex items-center justify-between border-b border-line px-6 py-4">
+              <span className="chip chip-accent">{project.status}</span>
+              <button onClick={onClose} className="icon-btn !h-10 !w-10" aria-label="Close">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="no-scrollbar overflow-y-auto px-6 py-8 sm:px-9">
+              <ProjectDetail project={project} />
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }

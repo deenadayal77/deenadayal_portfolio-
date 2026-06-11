@@ -1,111 +1,94 @@
 'use client';
 
-import { Briefcase, Award, Users, Sparkles } from 'lucide-react';
+import { Workflow, Layers, BrainCircuit } from 'lucide-react';
+import { personalInfo } from '@/lib/data';
+import { Reveal, Stagger } from './Reveal';
+import { rise, riseSmall } from '@/lib/motion';
+
+const facts = [
+  ['Role', 'AI Workflow Engineer'],
+  ['Based in', personalInfo.location.split(',').slice(0, 2).join(', ')],
+  ['Education', 'CSE · PES College of Engineering'],
+  ['Currently', 'Automation @ DemandNXT'],
+  ['Leadership', 'President · ISTE Student Chapter'],
+];
+
+const pillars = [
+  { icon: Workflow, title: 'Automation', body: 'n8n & API workflows that move data reliably between tools at scale.' },
+  { icon: Layers, title: 'Full-Stack', body: 'FastAPI, Django & MERN apps from schema design to shipped UI.' },
+  { icon: BrainCircuit, title: 'Applied AI', body: 'LLM integration, prompt engineering & NLP wired into real products.' },
+];
 
 export default function AboutSection() {
   return (
-    <section id="about" className="py-24 px-4 sm:px-6 lg:px-8 bg-[var(--bg-secondary)]">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-16 animate-fade-in-up">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            About <span className="gradient-text">Me</span>
-          </h2>
-        </div>
+    <section id="about" className="section">
+      <div className="shell">
+        <Reveal>
+          <span className="kicker">About</span>
+        </Reveal>
 
-        {/* Main Content */}
-        <div className="grid md:grid-cols-2 gap-12 items-center mb-16">
-          {/* Text */}
-          <div className="space-y-6 animate-slide-in-left">
-            <p className="text-lg text-[var(--text-secondary)] leading-relaxed">
-              I&apos;m Deena Dayal B K, a Computer Science Engineering student at PES College of Engineering with a passion for building innovative solutions using AI and full-stack technologies.
-            </p>
+        <div className="mt-10 grid gap-x-16 gap-y-12 lg:grid-cols-[1.5fr_1fr]">
+          {/* statement */}
+          <div>
+            <Reveal variants={rise}>
+              <p className="display-lg text-[clamp(1.7rem,3.4vw,2.9rem)] leading-[1.08]">
+                I&apos;m a CS engineer who likes the unglamorous part of software —
+                making systems <span className="accent-text">talk to each other</span> and
+                keep working when no one&apos;s watching.
+              </p>
+            </Reveal>
 
-            <p className="text-lg text-[var(--text-secondary)] leading-relaxed">
-              Currently working as a Python Full-Stack Developer at Dhee Coding Labs, where I focus on generative AI integration and backend API development. I have hands-on experience with modern web technologies and machine learning applications.
-            </p>
+            <Stagger className="mt-8 space-y-5 text-2" gap={0.12}>
+              <Reveal variants={riseSmall}>
+                <p>
+                  Today I design AI-powered workflow systems at DemandNXT — reducing manual
+                  operations, improving lead quality, and connecting business tools through
+                  automation that&apos;s built to be resilient, not just clever.
+                </p>
+              </Reveal>
+              <Reveal variants={riseSmall}>
+                <p>
+                  Before that I built full-stack products with generative AI features at Dhee
+                  Coding Labs, and as President of the ISTE Student Chapter I led teams and ran
+                  the 19th ISTE Karnataka Convention for 800+ participants.
+                </p>
+              </Reveal>
+            </Stagger>
 
-            <p className="text-lg text-[var(--text-secondary)] leading-relaxed">
-              As the President of ISTE Student Chapter, I&apos;ve developed strong leadership and project management skills by organizing large-scale technical events and mentoring peers. My goal is to create impactful products that solve real-world problems.
-            </p>
-
-            {/* Quick Facts */}
-            <div className="pt-6">
-              <p className="text-sm text-[var(--text-tertiary)] font-semibold mb-4">HIGHLIGHTS</p>
-              <ul className="space-y-3">
-                {[
-                  '🎓 CS Engineering @ PES College (2022-2026)',
-                  '🏢 Python Developer @ Dhee Coding Labs',
-                  '👥 ISTE President with 500+ member engagement',
-                  '🚀 10+ projects in full-stack and AI domains',
-                ].map((item) => (
-                  <li key={item} className="text-[var(--text-secondary)] flex items-start gap-3">
-                    <span className="flex-shrink-0">{item.split(' ')[0]}</span>
-                    <span>{item.substring(item.indexOf(' ') + 1)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* pillars */}
+            <Stagger className="mt-12 grid gap-4 sm:grid-cols-3" gap={0.1}>
+              {pillars.map((p) => {
+                const Icon = p.icon;
+                return (
+                  <Reveal key={p.title} variants={rise}>
+                    <div className="card h-full p-5" data-cursor="hover">
+                      <Icon size={22} className="accent-text" />
+                      <h3 className="mt-4 text-lg font-semibold">{p.title}</h3>
+                      <p className="mt-1.5 text-sm text-2">{p.body}</p>
+                    </div>
+                  </Reveal>
+                );
+              })}
+            </Stagger>
           </div>
 
-          {/* Cards Grid */}
-          <div className="space-y-4 animate-slide-in-right">
-            {[
-              {
-                icon: Briefcase,
-                title: 'Experience',
-                description: 'Python full-stack with GenAI at Dhee Coding Labs',
-              },
-              {
-                icon: Users,
-                title: 'Leadership',
-                description: 'ISTE President organizing 800+ participant events',
-              },
-              {
-                icon: Award,
-                title: 'Achievements',
-                description: 'Runner-up in hackathons and technical competitions',
-              },
-              {
-                icon: Sparkles,
-                title: 'Passion',
-                description: 'Building AI-powered solutions that create impact',
-              },
-            ].map((item, idx) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={idx}
-                  className="card group p-6 rounded-xl border-2 transition-all duration-300"
-                  style={{ animationDelay: `${idx * 100}ms` }}
-                >
-                  <div className="flex gap-4 items-start">
-                    <div className="p-3 rounded-lg bg-[var(--accent)]/10 group-hover:bg-[var(--accent)]/20 transition-colors flex-shrink-0">
-                      <Icon size={24} className="text-[var(--accent)]" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-[var(--text-primary)] mb-1">{item.title}</h3>
-                      <p className="text-sm text-[var(--text-secondary)]">{item.description}</p>
-                    </div>
+          {/* spec sheet */}
+          <Reveal variants={rise}>
+            <div className="card overflow-hidden">
+              <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+                <span className="eyebrow">Profile</span>
+                <span className="mono text-xs text-3">v2026</span>
+              </div>
+              <dl className="divide-y divide-[var(--line)]">
+                {facts.map(([k, v]) => (
+                  <div key={k} className="flex items-baseline justify-between gap-4 px-5 py-3.5">
+                    <dt className="mono text-xs uppercase tracking-wider text-3">{k}</dt>
+                    <dd className="text-right text-sm font-medium">{v}</dd>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Skills Preview */}
-        <div className="grid md:grid-cols-3 gap-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-          {[
-            { label: 'Languages', skills: 'Python, JavaScript, C, C++' },
-            { label: 'Frontend', skills: 'React, Next.js, Tailwind CSS' },
-            { label: 'Backend', skills: 'FastAPI, Django, Node.js' },
-          ].map((group) => (
-            <div key={group.label} className="card p-6 rounded-xl">
-              <h4 className="font-bold text-[var(--text-primary)] mb-2">{group.label}</h4>
-              <p className="text-sm text-[var(--text-secondary)]">{group.skills}</p>
+                ))}
+              </dl>
             </div>
-          ))}
+          </Reveal>
         </div>
       </div>
     </section>

@@ -1,107 +1,85 @@
 'use client';
 
-import { Project } from '@/lib/projects';
-import { ChevronRight } from 'lucide-react';
+import { ArrowUpRight, Github } from 'lucide-react';
+import type { Project } from '@/lib/projects';
+
+export default function ProjectDetail({ project }: ProjectDetailProps) {
+  return (
+    <div className="space-y-10">
+      <header className="space-y-5">
+        <h2 className="display-lg text-[clamp(2rem,5vw,3.25rem)]">{project.title}</h2>
+        <p className="lead max-w-none text-base">{project.description}</p>
+
+        <div className="grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-line bg-line">
+          {[
+            ['Date', project.date],
+            ['Role', project.role],
+            ['Status', project.status],
+          ].map(([k, v]) => (
+            <div key={k} className="bg-bg-2 px-4 py-3">
+              <p className="eyebrow">{k}</p>
+              <p className="mt-1 text-sm font-medium">{v}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-3 pt-1">
+          <a href={project.github} target="_blank" rel="noreferrer" className="btn btn-ghost h-11 !min-h-0 text-sm" data-cursor="hover">
+            <Github size={16} /> Source
+          </a>
+          {project.liveLink && (
+            <a href={project.liveLink} target="_blank" rel="noreferrer" className="btn btn-accent h-11 !min-h-0 text-sm" data-cursor="hover">
+              Live <ArrowUpRight size={16} />
+            </a>
+          )}
+        </div>
+      </header>
+
+      <Block label="01 — The Problem">
+        <p className="text-2">{project.problem}</p>
+      </Block>
+
+      <Block label="02 — What I Built">
+        <p className="text-2">{project.whatBuilt}</p>
+      </Block>
+
+      <Block label="03 — How It's Wired">
+        <div className="flex flex-wrap gap-2">
+          {project.techStack.map((t) => (
+            <span key={t} className="chip">{t}</span>
+          ))}
+        </div>
+      </Block>
+
+      <Block label="04 — The Judgment Calls">
+        <div className="space-y-px overflow-hidden rounded-xl border border-line bg-line">
+          {project.judgmentCalls.map((c) => (
+            <div key={c.title} className="bg-bg-2 p-4">
+              <h4 className="font-semibold accent-text">{c.title}</h4>
+              <p className="mt-1 text-sm text-2">{c.description}</p>
+            </div>
+          ))}
+        </div>
+      </Block>
+
+      <Block label="05 — What It Changed">
+        <div className="card bg-[var(--accent-soft)] p-5">
+          <p className="font-medium">{project.impact}</p>
+        </div>
+      </Block>
+    </div>
+  );
+}
 
 interface ProjectDetailProps {
   project: Project;
 }
 
-export default function ProjectDetail({ project }: ProjectDetailProps) {
-  const sections = [
-    { title: 'The Problem', content: project.problem },
-    { title: 'What I Built', content: project.whatBuilt },
-  ];
-
+function Block({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-12 max-h-[70vh] overflow-y-auto pr-4">
-      {/* Header Info */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-[var(--accent)] uppercase">LIVE AT</span>
-          <span className="text-[var(--text-primary)]">Portfolio</span>
-        </div>
-        <h2 className="text-5xl font-black gradient-text text-[var(--text-primary)]">{project.title}</h2>
-        <p className="text-xl text-[var(--text-secondary)] leading-relaxed max-w-2xl">
-          {project.description}
-        </p>
-        <div className="flex flex-wrap gap-6 pt-4 text-sm">
-          <div>
-            <p className="text-[var(--text-tertiary)] uppercase text-xs">Date</p>
-            <p className="text-white font-semibold">{project.date}</p>
-          </div>
-          <div>
-            <p className="text-[var(--text-tertiary)] uppercase text-xs">Role</p>
-            <p className="text-white font-semibold">{project.role}</p>
-          </div>
-          <div>
-            <p className="text-[var(--text-tertiary)] uppercase text-xs">Status</p>
-            <p className="text-[var(--accent)] font-semibold">{project.status}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Problem & What I Built */}
-      {sections.map((section) => (
-        <div key={section.title} className="space-y-3">
-          <h3 className="text-2xl font-black uppercase tracking-wide">
-            {section.title}
-          </h3>
-          <p className="text-[var(--text-secondary)] leading-relaxed">
-            {section.content}
-          </p>
-        </div>
-      ))}
-
-      {/* How it's wired (Tech Stack) */}
-      <div className="space-y-4">
-        <h3 className="text-2xl font-black uppercase tracking-wide">
-          How It&apos;s Wired
-        </h3>
-        <div className="flex flex-wrap gap-3">
-          {project.techStack.map((tech) => (
-            <span
-              key={tech}
-              className="px-4 py-2 neon-border rounded-xl text-sm font-semibold bg-[var(--accent)]/5 hover:bg-[var(--accent)]/15 transition-all"
-            >
-              {tech}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Judgment Calls */}
-      <div className="space-y-4">
-        <h3 className="text-2xl font-black uppercase tracking-wide">
-          The Judgment Calls
-        </h3>
-        <div className="space-y-4">
-          {project.judgmentCalls.map((call, idx) => (
-            <div
-              key={idx}
-              className="flex gap-4 p-4 bg-[var(--accent)]/5 border border-[var(--accent)]/20 rounded-lg hover:border-[var(--accent)]/50 transition-all"
-            >
-              <ChevronRight className="text-[var(--accent)] flex-shrink-0 mt-1" />
-              <div>
-                <h4 className="font-bold text-[var(--accent)] mb-1">{call.title}</h4>
-                <p className="text-sm text-[var(--text-secondary)]">{call.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Impact */}
-      <div className="space-y-3 pb-4">
-        <h3 className="text-2xl font-black uppercase tracking-wide">
-          What It Changed
-        </h3>
-        <div className="p-6 neon-border rounded-xl bg-[var(--accent)]/5">
-          <p className="text-[var(--text-secondary)] leading-relaxed">
-            {project.impact}
-          </p>
-        </div>
-      </div>
-    </div>
+    <section className="grid gap-3 border-t border-line pt-6 sm:grid-cols-[140px_1fr] sm:gap-6">
+      <h3 className="mono text-xs uppercase tracking-wider text-3">{label}</h3>
+      <div className="leading-relaxed">{children}</div>
+    </section>
   );
 }

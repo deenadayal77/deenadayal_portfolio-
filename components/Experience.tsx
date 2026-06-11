@@ -1,96 +1,73 @@
 'use client';
 
+import { useRef } from 'react';
+import { MapPin } from 'lucide-react';
+import { motion, useScroll, useSpring } from 'framer-motion';
 import { experience } from '@/lib/data';
-import { Briefcase, Calendar, MapPin, ArrowRight } from 'lucide-react';
+import { Reveal } from './Reveal';
+import { rise } from '@/lib/motion';
 
 export default function Experience() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start 70%', 'end 60%'],
+  });
+  const scaleY = useSpring(scrollYProgress, { stiffness: 120, damping: 30, mass: 0.5 });
+
   return (
-    <section id="experience" className="py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute inset-0 -z-10 opacity-10">
-        <div className="absolute left-1/2 -translate-x-1/2 top-1/3 w-96 h-96 bg-[var(--accent)] rounded-full blur-3xl" />
-      </div>
-
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="mb-20 animate-fade-in-up">
-          <h2 className="text-4xl md:text-5xl font-black mb-4">
-            Professional <span className="gradient-text">Experience</span>
+    <section id="experience" className="section">
+      <div className="shell">
+        <Reveal>
+          <span className="kicker">Trajectory</span>
+        </Reveal>
+        <Reveal variants={rise} delay={0.05}>
+          <h2 className="display-lg mt-5">
+            Where I&apos;ve <span className="accent-text">been.</span>
           </h2>
-          <p className="text-[var(--text-secondary)] text-lg">Building products and leading teams</p>
-        </div>
+        </Reveal>
 
-        {/* Timeline */}
-        <div className="space-y-6">
-          {experience.map((job, index) => (
-            <div
-              key={job.id}
-              className="relative animate-fade-in-up"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              {/* Timeline Line */}
-              {index !== experience.length - 1 && (
-                <div className="absolute left-[27px] top-20 bottom-0 w-0.5 bg-gradient-to-b from-[var(--accent)] via-[var(--accent)]/50 to-transparent" />
-              )}
+        <div ref={ref} className="relative mt-14 pl-8 sm:pl-10">
+          {/* rail */}
+          <div className="absolute left-[5px] top-2 bottom-2 w-px bg-line sm:left-[7px]" />
+          <motion.div
+            className="absolute left-[5px] top-2 bottom-2 w-px origin-top bg-[var(--accent)] sm:left-[7px]"
+            style={{ scaleY }}
+          />
 
-              {/* Timeline Dot with Neon Glow */}
-              <div className="absolute left-0 top-0 w-14 h-14 flex items-center justify-center">
-                <div className="absolute inset-0 bg-[var(--accent)]/20 rounded-full blur-lg animate-pulse" />
-                <div className="relative w-14 h-14 neon-border rounded-full flex items-center justify-center bg-[var(--bg-secondary)]">
-                  <Briefcase size={20} className="text-[var(--accent)]" />
-                </div>
-              </div>
+          <div className="space-y-14">
+            {experience.map((job) => (
+              <Reveal key={job.id} variants={rise}>
+                <div className="relative">
+                  {/* dot */}
+                  <span className="absolute -left-8 top-1.5 flex h-3 w-3 items-center justify-center sm:-left-10">
+                    <span className="signal-dot" />
+                  </span>
 
-              {/* Content Card */}
-              <div className="ml-28 neon-border p-6 rounded-2xl bg-[var(--bg-secondary)]/40 backdrop-blur-sm group hover:bg-[var(--bg-secondary)]/60 transition-all duration-300 cursor-pointer">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-black text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors duration-300 mb-2">
-                      {job.title}
-                    </h3>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-[var(--accent)] font-bold text-lg">{job.company}</p>
-                      <p className="text-sm text-[var(--text-secondary)] flex items-center gap-2">
-                        <MapPin size={14} className="text-[var(--accent)]" />
-                        {job.location}
-                      </p>
-                    </div>
+                  <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:justify-between">
+                    <span className="mono text-xs text-3">{job.period}</span>
+                    <span className="chip w-fit">{job.type}</span>
                   </div>
 
-                  {/* Period & Type */}
-                  <div className="flex flex-wrap gap-2">
-                    <span className="neon-border px-3 py-1 rounded-lg text-xs font-bold text-[var(--accent)] bg-[var(--accent)]/10 flex items-center gap-1">
-                      <Calendar size={12} />
-                      {job.period}
-                    </span>
-                    <span className="px-3 py-1 rounded-lg text-xs font-bold text-white bg-[var(--accent)]/20 border border-[var(--accent)]/30">
-                      {job.type}
+                  <h3 className="mt-3 text-2xl font-semibold leading-tight">{job.title}</h3>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                    <span className="font-medium accent-text">{job.company}</span>
+                    <span className="flex items-center gap-1 text-3">
+                      <MapPin size={13} /> {job.location}
                     </span>
                   </div>
-                </div>
 
-                {/* Description */}
-                <p className="text-[var(--text-secondary)] mb-6 leading-relaxed text-sm md:text-base">
-                  {job.description}
-                </p>
+                  <p className="mt-4 max-w-2xl text-2">{job.description}</p>
 
-                {/* Responsibilities - Neon Badges */}
-                <div className="flex flex-wrap gap-2">
-                  {job.responsibilities.map((resp, idx) => (
-                    <span
-                      key={resp}
-                      className="neon-border px-3 py-1.5 rounded-lg text-xs font-semibold text-[var(--accent)] bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 transition-all flex items-center gap-1"
-                      style={{ animationDelay: `${idx * 50}ms` }}
-                    >
-                      <ArrowRight size={12} className="opacity-50" />
-                      {resp}
-                    </span>
-                  ))}
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {job.responsibilities.map((r) => (
+                      <span key={r} className="chip">{r}</span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </Reveal>
+            ))}
+          </div>
         </div>
       </div>
     </section>

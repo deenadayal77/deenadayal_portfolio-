@@ -60,3 +60,14 @@ export const achievements = [
   { title: 'Runner-up - Fin-a-thon', issuer: 'Puttannaiah Foundation', description: 'Financial technology solution' },
   { title: 'Runner-up - Inovista Pitching', issuer: 'PESCE', description: 'Innovative business idea' },
 ];
+
+export const testimonials = [
+  {
+    id: 1,
+    quote: "Deena built our entire lead enrichment pipeline from scratch in under two weeks. The system processes over 100,000 records daily without a single manual touchpoint. Exactly the kind of engineer you want building your infrastructure.",
+    name: "Harshith Gowda",
+    title: "Co-Founder",
+    company: "HelixGTM",
+    avatarInitials: "HG",
+  },
+];

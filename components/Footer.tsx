@@ -1,65 +1,79 @@
 'use client';
 
-import { ArrowUp, Github, Linkedin, Mail } from 'lucide-react';
 import { personalInfo } from '@/lib/data';
-
-const nav = [
-  { label: 'About', href: '#about' },
-  { label: 'Work', href: '#work' },
-  { label: 'Experience', href: '#experience' },
-  { label: 'Stack', href: '#stack' },
-  { label: 'Contact', href: '#contact' },
-];
-
-const socials = [
-  { icon: Linkedin, href: personalInfo.linkedin, label: 'LinkedIn' },
-  { icon: Github, href: personalInfo.github, label: 'GitHub' },
-  { icon: Mail, href: `mailto:${personalInfo.email}`, label: 'Email' },
-];
 
 export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative border-t border-line">
-      <div className="shell py-16">
-        <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
-          <div className="max-w-sm">
-            <a href="#top" className="flex items-center gap-2.5">
-              <span className="signal-dot" />
-              <span className="text-2xl font-semibold tracking-tight">
-                deena<span className="accent-text">.</span>
-              </span>
-            </a>
-            <p className="mt-4 text-sm text-2">{personalInfo.title}</p>
-            <p className="mono mt-3 text-xs text-3">{personalInfo.location}</p>
-          </div>
-
-          <nav className="flex flex-wrap gap-x-8 gap-y-2">
-            {nav.map((l) => (
-              <a key={l.href} href={l.href} className="link-underline text-sm text-2 hover:text-ink" data-cursor="hover">
-                {l.label}
-              </a>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2">
-            {socials.map(({ icon: Icon, href, label }) => (
-              <a key={label} href={href} target={label === 'Email' ? undefined : '_blank'} rel="noreferrer" className="icon-btn" aria-label={label}>
-                <Icon size={18} />
-              </a>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-line pt-6 sm:flex-row">
-          <p className="mono text-xs text-3">Copyright {year} {personalInfo.name} - built with intent.</p>
-          <a href="#top" className="group flex items-center gap-2 text-sm text-2 hover:text-ink" data-cursor="hover">
-            Back to top
-            <span className="icon-btn !h-9 !w-9 transition-transform group-hover:-translate-y-0.5">
-              <ArrowUp size={16} />
+    /*
+      Slightly darker background differentiates footer from content above.
+      The border-t provides the clean separation line.
+    */
+    <footer
+      className="border-t border-[var(--line)]"
+      style={{ background: 'var(--elevated)' }}
+    >
+      <div className="shell">
+        <div className="flex flex-col items-center justify-between gap-5 py-12 sm:flex-row">
+          {/* Left — copyright */}
+          <div className="flex flex-col items-center gap-1.5 sm:items-start">
+            <span className="text-[0.95rem] font-semibold tracking-tight">
+              deena<span className="text-[var(--accent-text)]">.</span>
             </span>
-          </a>
+            <p className="mono text-xs text-[var(--text-3)]">
+              &copy; {year} Deena Dayal B K &middot; built with intent
+            </p>
+          </div>
+
+          {/* Center — links */}
+          <div className="flex items-center gap-1 mono text-xs text-[var(--text-3)]">
+            <a
+              href={personalInfo.github}
+              target="_blank"
+              rel="noreferrer"
+              className="transition-colors duration-[180ms] hover:text-[var(--text-2)]"
+            >
+              GitHub
+            </a>
+            <span className="mx-2 opacity-40">&middot;</span>
+            <a
+              href={personalInfo.linkedin}
+              target="_blank"
+              rel="noreferrer"
+              className="transition-colors duration-[180ms] hover:text-[var(--text-2)]"
+            >
+              LinkedIn
+            </a>
+            <span className="mx-2 opacity-40">&middot;</span>
+            <a
+              href={`mailto:${personalInfo.email}`}
+              className="transition-colors duration-[180ms] hover:text-[var(--text-2)]"
+            >
+              Email
+            </a>
+          </div>
+
+          {/* Right — back to top */}
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="group flex items-center gap-1.5 mono text-xs text-[var(--text-3)] transition-colors duration-[180ms] hover:text-[var(--accent-text)]"
+            aria-label="Back to top"
+          >
+            <span
+              className="inline-block"
+              style={{ transition: 'transform 220ms var(--ease-out)' }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLSpanElement).style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLSpanElement).style.transform = '';
+              }}
+            >
+              &#8593;
+            </span>
+            Back to top
+          </button>
         </div>
       </div>
     </footer>

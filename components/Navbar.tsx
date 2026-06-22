@@ -1,27 +1,33 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Menu, X, Sun, Moon } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { useTheme } from '@/lib/theme';
-import { ease } from '@/lib/motion';
+import { easeOut, easeDrawer, spring } from '@/lib/motion';
 
 const links = [
-  { label: 'About', href: '#about' },
-  { label: 'Work', href: '#work' },
-  { label: 'Experience', href: '#experience' },
-  { label: 'Stack', href: '#stack' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'About', href: '#about', id: 'about' },
+  { label: 'Work', href: '#work', id: 'work' },
+  { label: 'Experience', href: '#experience', id: 'experience' },
+  { label: 'Skills', href: '#stack', id: 'stack' },
+  { label: 'Contact', href: '#contact', id: 'contact' },
 ];
 
+const sectionLabels: Record<string, string> = {
+  about: '01',
+  work: '02',
+  experience: '03',
+  stack: '04',
+  contact: '05',
+};
+
 export default function Navbar() {
-  const { theme, toggleTheme } = useTheme();
   const reduce = useReducedMotion();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [active, setActive] = useState('about');
+  const [active, setActive] = useState('');
+  const [sectionNum, setSectionNum] = useState('01');
 
-  // solidify bar after scrolling past the hero fold
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
@@ -29,16 +35,18 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // active section highlight
   useEffect(() => {
-    const ids = links.map((l) => l.href.slice(1));
+    const ids = links.map((l) => l.id);
     const obs = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
-          if (e.isIntersecting) setActive(e.target.id);
+          if (e.isIntersecting) {
+            setActive(e.target.id);
+            setSectionNum(sectionLabels[e.target.id] ?? '01');
+          }
         });
       },
-      { rootMargin: '-45% 0px -50% 0px', threshold: 0 }
+      { rootMargin: '-40% 0px -55% 0px', threshold: 0 }
     );
     ids.forEach((id) => {
       const el = document.getElementById(id);
@@ -47,7 +55,6 @@ export default function Navbar() {
     return () => obs.disconnect();
   }, []);
 
-  // lock body scroll when overlay open
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
     return () => {
@@ -58,132 +65,163 @@ export default function Navbar() {
   return (
     <>
       <motion.header
-        initial={{ y: reduce ? 0 : -80, opacity: 0 }}
+        initial={{ y: reduce ? 0 : -64, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.7, ease, delay: 0.1 }}
-        className="fixed inset-x-0 top-0 z-[100]"
+        transition={{ duration: 0.45, ease: easeOut, delay: 0.08 }}
+        className="fixed inset-x-0 top-0 z-[100] flex justify-center pt-4 px-4"
       >
         <nav
-          className="shell flex items-center justify-between transition-all duration-300"
+          className={[
+            'flex w-full max-w-5xl items-center justify-between px-5 py-2.5 rounded-2xl',
+            scrolled
+              ? 'bg-[rgba(13,17,23,0.88)] backdrop-blur-xl border border-[var(--line-2)] shadow-[0_8px_32px_rgba(0,0,8,0.48)]'
+              : 'bg-transparent border border-transparent',
+          ].join(' ')}
           style={{
-            marginTop: scrolled ? 10 : 18,
+            transition: 'background-color 300ms ease, border-color 300ms ease, box-shadow 300ms ease, backdrop-filter 300ms ease',
           }}
         >
-          <div
-            className="flex w-full items-center justify-between rounded-full border px-4 py-2.5 transition-all duration-300"
-            style={{
-              borderColor: scrolled ? 'var(--line-2)' : 'transparent',
-              background: scrolled ? 'color-mix(in srgb, var(--bg-2) 72%, transparent)' : 'transparent',
-              backdropFilter: scrolled ? 'blur(14px)' : 'none',
-              WebkitBackdropFilter: scrolled ? 'blur(14px)' : 'none',
-            }}
+          {/* Wordmark */}
+          <a
+            href="#top"
+            className="flex items-center text-[1.1rem] font-semibold tracking-tight"
+            aria-label="Home"
           >
-            {/* Wordmark */}
-            <a href="#top" className="group flex items-center gap-2.5" aria-label="Home">
-              <span className="signal-dot" />
-              <span className="text-[1.05rem] font-semibold tracking-tight">
-                deena<span className="accent-text">.</span>
-              </span>
-            </a>
+            deena<span className="text-[var(--accent-text)]">.</span>
+          </a>
 
-            {/* Desktop links */}
-            <ul className="hidden items-center gap-1 md:flex">
-              {links.map((l) => {
-                const isActive = active === l.href.slice(1);
-                return (
-                  <li key={l.href}>
-                    <a
-                      href={l.href}
-                      className="relative rounded-full px-3.5 py-1.5 text-sm text-ink-2 transition-colors hover:text-ink"
-                      style={{ color: isActive ? 'var(--text)' : undefined }}
-                    >
-                      {isActive && (
-                        <motion.span
-                          layoutId="nav-active"
-                          className="absolute inset-0 -z-10 rounded-full"
-                          style={{ background: 'color-mix(in srgb, var(--text) 8%, transparent)' }}
-                          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                        />
-                      )}
-                      {l.label}
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={toggleTheme}
-                className="icon-btn !h-10 !w-10 !rounded-full"
-                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              >
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.span
-                    key={theme}
-                    initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
-                    animate={{ rotate: 0, opacity: 1, scale: 1 }}
-                    exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
-                    transition={{ duration: 0.25 }}
-                    className="flex"
+          {/* Desktop nav links */}
+          <ul className="hidden items-center md:flex">
+            {links.map((l) => {
+              const isActive = active === l.id;
+              return (
+                <li key={l.href}>
+                  <a
+                    href={l.href}
+                    className="relative flex items-center px-3.5 py-2 text-[0.84rem] font-medium transition-colors duration-[180ms] ease-out"
+                    style={{ color: isActive ? 'var(--text)' : 'var(--text-2)' }}
                   >
-                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                  </motion.span>
-                </AnimatePresence>
-              </button>
+                    {l.label}
+                    {isActive && (
+                      <motion.span
+                        layoutId="nav-active-underline"
+                        className="absolute inset-x-3.5 -bottom-0.5 h-[2px] rounded-full bg-[var(--accent)]"
+                        transition={spring}
+                      />
+                    )}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
 
-              <a href="#contact" className="btn btn-accent hidden h-10 !min-h-0 px-4 text-sm sm:inline-flex">
-                Let&apos;s talk
-              </a>
-
-              <button
-                className="icon-btn !h-10 !w-10 !rounded-full md:hidden"
-                onClick={() => setOpen((v) => !v)}
-                aria-label="Toggle menu"
-                aria-expanded={open}
-              >
-                {open ? <X size={18} /> : <Menu size={18} />}
-              </button>
-            </div>
+          {/* Right side */}
+          <div className="flex items-center gap-3">
+            <span className="hidden items-center gap-2 md:flex">
+              <span className="h-3 w-px bg-[var(--line-2)]" aria-hidden />
+              <span className="mono text-[0.7rem] text-[var(--text-3)] tabular-nums">
+                {sectionNum} / 05
+              </span>
+            </span>
+            {/* "Let's talk" as a subtle ghost-mini-button for emphasis */}
+            <a
+              href="#contact"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-[var(--line-2)] px-3 py-1.5 text-[0.8rem] font-medium text-[var(--accent-text)]"
+              style={{
+                background: 'var(--accent-soft)',
+                transition: 'border-color 180ms ease, background-color 180ms ease, color 180ms ease',
+              }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget as HTMLAnchorElement;
+                el.style.borderColor = 'rgba(59,130,246,0.4)';
+                el.style.backgroundColor = 'rgba(59,130,246,0.14)';
+                el.style.color = 'var(--accent)';
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget as HTMLAnchorElement;
+                el.style.borderColor = '';
+                el.style.backgroundColor = '';
+                el.style.color = '';
+              }}
+            >
+              Let&apos;s talk <span aria-hidden>&rarr;</span>
+            </a>
+            <button
+              className="icon-btn md:hidden"
+              onClick={() => setOpen((v) => !v)}
+              aria-label="Toggle menu"
+              aria-expanded={open}
+            >
+              {open ? <X size={17} /> : <Menu size={17} />}
+            </button>
           </div>
         </nav>
       </motion.header>
 
-      {/* Mobile overlay */}
+      {/* Mobile bottom sheet */}
       <AnimatePresence>
         {open && (
-          <motion.div
-            className="fixed inset-0 z-[99] md:hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            style={{ background: 'color-mix(in srgb, var(--bg) 92%, transparent)', backdropFilter: 'blur(20px)' }}
-          >
-            <motion.ul
-              className="flex h-full flex-col justify-center gap-2 px-8"
-              initial="hidden"
-              animate="show"
-              variants={{ show: { transition: { staggerChildren: 0.06, delayChildren: 0.08 } } }}
+          <>
+            <motion.div
+              className="fixed inset-0 z-[98] md:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+              style={{ background: 'rgba(0,0,8,0.65)', backdropFilter: 'blur(4px)' }}
+              onClick={() => setOpen(false)}
+            />
+            <motion.div
+              className="fixed inset-x-0 bottom-0 z-[99] md:hidden"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{
+                y: '100%',
+                transition: { type: 'tween', ease: [0.4, 0, 0.2, 1], duration: 0.26 },
+              }}
+              transition={{ type: 'tween', ease: easeDrawer, duration: 0.42 }}
             >
-              {links.map((l, i) => (
-                <motion.li
-                  key={l.href}
-                  variants={{ hidden: { opacity: 0, x: -24 }, show: { opacity: 1, x: 0 } }}
-                  transition={{ duration: 0.5, ease }}
-                >
+              <div
+                className="rounded-t-[20px] border-t border-[var(--line-2)] px-6 pb-10 pt-6"
+                style={{ background: 'var(--bg-2)' }}
+              >
+                <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-[var(--line-2)]" />
+                <ul className="space-y-1">
+                  {links.map((l, i) => (
+                    <li key={l.href}>
+                      <a
+                        href={l.href}
+                        onClick={() => setOpen(false)}
+                        className="flex items-center justify-between rounded-xl px-4 py-3.5"
+                        style={{
+                          color: active === l.id ? 'var(--text)' : 'var(--text-2)',
+                          transition: 'background-color 150ms ease, color 150ms ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'var(--bg-3)';
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '';
+                        }}
+                      >
+                        <span className="text-xl font-semibold">{l.label}</span>
+                        <span className="mono text-xs text-[var(--text-3)]">0{i + 1}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-6 border-t border-[var(--line)] pt-5">
                   <a
-                    href={l.href}
+                    href="#contact"
                     onClick={() => setOpen(false)}
-                    className="flex items-baseline gap-4 py-2"
+                    className="btn btn-accent w-full justify-center"
                   >
-                    <span className="mono text-sm text-3">0{i + 1}</span>
-                    <span className="display-lg text-[2.6rem]">{l.label}</span>
+                    Let&apos;s talk &rarr;
                   </a>
-                </motion.li>
-              ))}
-            </motion.ul>
-          </motion.div>
+                </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>

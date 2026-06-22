@@ -15,6 +15,14 @@ interface RevealProps {
 /** Single element that rises into view once. */
 export function Reveal({ children, variants = rise, className, delay = 0, as = 'div' }: RevealProps) {
   const Comp = motion[as] as typeof motion.div;
+
+  // Merge the variant's own transition with the delay — do NOT pass only {delay}
+  // because it would replace the variant's duration+ease with Framer defaults.
+  const variantTransition = (variants?.show as Record<string, unknown>)?.transition as Record<string, unknown> | undefined;
+  const mergedTransition = delay
+    ? { ...(variantTransition ?? {}), delay }
+    : undefined;
+
   return (
     <Comp
       className={className}
@@ -22,7 +30,7 @@ export function Reveal({ children, variants = rise, className, delay = 0, as = '
       initial="hidden"
       whileInView="show"
       viewport={viewport}
-      transition={delay ? { delay } : undefined}
+      transition={mergedTransition}
     >
       {children}
     </Comp>
@@ -38,7 +46,7 @@ interface StaggerProps {
 }
 
 /** Container that staggers its <Reveal> / motion children. */
-export function Stagger({ children, className, gap = 0.08, delayChildren = 0, as = 'div' }: StaggerProps) {
+export function Stagger({ children, className, gap = 0.06, delayChildren = 0, as = 'div' }: StaggerProps) {
   const Comp = motion[as] as typeof motion.div;
   return (
     <Comp

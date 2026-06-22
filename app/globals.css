@@ -3,56 +3,47 @@
 @tailwind utilities;
 
 /* ============================================================
-   SIGNAL — design tokens
-   Dark = default. Light = warm paper.
-   Accent: professional warm coral / burnt sienna.
+   Design tokens — Direction 1 "Premium SaaS Founder"
+   Dark only. Cool navy palette. Signal Blue accent.
    ============================================================ */
 
-:root,
-[data-theme='dark'] {
-  --bg: #0d0c0b;
-  --bg-2: #141210;
-  --bg-3: #1c1916;
-  --elevated: #181512;
-  --text: #f5f0e8;
-  --text-2: #a09890;
-  --text-3: #6a6258;
-  --line: rgba(245, 240, 232, 0.08);
-  --line-2: rgba(245, 240, 232, 0.16);
-  --accent: #df7248;
-  --accent-2: #c45b32;
-  --accent-text: #e88460;
-  --accent-ink: #1c0a03;
-  --accent-soft: rgba(223, 114, 72, 0.13);
-  --accent-warm: #f0b84e;
-  --accent-warm-soft: rgba(240, 184, 78, 0.1);
-  --shadow: rgba(0, 0, 0, 0.65);
-  --grain-opacity: 0.042;
-  --grid-opacity: 0.05;
-  color-scheme: dark;
-}
+:root {
+  /* Surface hierarchy */
+  --bg: #0d1117;
+  --bg-2: #161b27;
+  --bg-3: #1d2333;
+  --elevated: #12161f;
 
-[data-theme='light'] {
-  --bg: #f8f5f0;
-  --bg-2: #fdf9f3;
-  --bg-3: #ede8df;
-  --elevated: #fdf9f3;
-  --text: #141210;
-  --text-2: #4e4840;
-  --text-3: #8a8278;
-  --line: rgba(20, 18, 16, 0.1);
-  --line-2: rgba(20, 18, 16, 0.18);
-  --accent: #c0522a;
-  --accent-2: #a33e1a;
-  --accent-text: #b04726;
-  --accent-ink: #fff8f4;
-  --accent-soft: rgba(192, 82, 42, 0.1);
-  --accent-warm: #9a6010;
-  --accent-warm-soft: rgba(154, 96, 16, 0.1);
-  --shadow: rgba(20, 18, 16, 0.12);
-  --grain-opacity: 0.028;
-  --grid-opacity: 0.058;
-  color-scheme: light;
+  /* Text hierarchy */
+  --text: #e8edf5;
+  --text-2: #8b96ab;
+  --text-3: #50596b;
+
+  /* Borders — slightly stronger for architectural clarity */
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.14);
+
+  /* Accent — Signal Blue */
+  --accent: #3b82f6;
+  --accent-2: #2563eb;
+  --accent-text: #60a5fa;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(59, 130, 246, 0.10);
+
+  /* Positive — Emerald */
+  --positive: #22c55e;
+  --positive-soft: rgba(34, 197, 94, 0.10);
+
+  /* Shadows */
+  --shadow: rgba(0, 0, 8, 0.7);
+  --shadow-accent: rgba(59, 130, 246, 0.20);
+
+  /* Easing curves */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  color-scheme: dark;
 }
 
 * {
@@ -67,67 +58,20 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
-  background: var(--bg);
+  /*
+    Radial gradient atmosphere (Vercel/Linear technique):
+    subtle blue-tinted spotlight from top-center creates depth.
+    At 6% opacity it's imperceptible in isolation but adds dimension.
+  */
+  background:
+    radial-gradient(ellipse 120% 55% at 50% -6%, rgba(59, 130, 246, 0.065) 0%, transparent 55%),
+    var(--bg);
   color: var(--text);
   font-family: var(--font-display), "Segoe UI", system-ui, sans-serif;
-  font-feature-settings: "ss01", "ss02";
+  font-feature-settings: "ss01", "ss02", "cv11";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
-}
-
-.skip-link {
-  position: fixed;
-  left: 1rem;
-  top: 1rem;
-  z-index: 10000;
-  transform: translateY(-160%);
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  padding: 0.7rem 1rem;
-  font-weight: 600;
-  transition: transform 0.2s ease;
-}
-
-.skip-link:focus {
-  transform: translateY(0);
-}
-
-/* Atmospheric backdrop: a fixed gradient mesh + fine grid + grain.
-   Everything here is STATIC (no per-frame repaint) for 60fps. */
-.atmosphere {
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
-  background:
-    radial-gradient(56rem 52rem at 9% -8%, var(--accent-soft), transparent 58%),
-    radial-gradient(46rem 38rem at 95% 4%, var(--accent-warm-soft), transparent 58%),
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-3) 28%, transparent), transparent 28rem),
-    var(--bg);
-}
-
-.atmosphere::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(var(--line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--line) 1px, transparent 1px);
-  background-size: 72px 72px;
-  opacity: var(--grid-opacity);
-  mask-image: radial-gradient(ellipse 120% 80% at 50% 0%, #000 30%, transparent 80%);
-}
-
-/* SVG-free grain via repeating gradient — cheap, GPU friendly */
-.grain {
-  position: fixed;
-  inset: -200%;
-  z-index: -1;
-  pointer-events: none;
-  opacity: var(--grain-opacity);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 a {
@@ -138,6 +82,7 @@ a {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 4px;
+  border-radius: 4px;
 }
 
 button,
@@ -148,12 +93,35 @@ select {
   color: inherit;
 }
 
-h1, h2, h3, h4, h5, h6 {
+/*
+  h1/h2 — display sizing: very tight tracking and leading for impact.
+  h3/h4/h5/h6 — body heading: looser for readability.
+  Scoping prevents tight tracking from bleeding into small headings.
+*/
+h1,
+h2 {
   margin: 0;
   font-weight: 700;
-  letter-spacing: -0.032em;
-  line-height: 1.02;
+  letter-spacing: -0.034em;
+  line-height: 1.0;
   text-wrap: balance;
+}
+
+h3 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
 }
 
 p {
@@ -164,6 +132,29 @@ p {
 ::selection {
   background: var(--accent);
   color: var(--accent-ink);
+}
+
+/* ============================================================
+   Skip link
+   ============================================================ */
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 10000;
+  transform: translateY(-160%);
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  padding: 0.7rem 1.1rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: transform 200ms var(--ease-out);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
 }
 
 /* ============================================================
@@ -179,42 +170,48 @@ p {
 
 .section {
   position: relative;
-  padding-block: clamp(5.5rem, 11vw, 8.5rem);
+  padding-block: clamp(5rem, 10vw, 8rem);
 }
 
+/* Section separator — slightly stronger gradient for visible rhythm */
 .section::before {
   content: "";
   position: absolute;
   inset-inline: 0;
   top: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--line), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.09) 40%, rgba(255, 255, 255, 0.09) 60%, transparent);
 }
+
+/* ============================================================
+   Typography utilities
+   ============================================================ */
 
 .kicker {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
   font-family: var(--font-mono), monospace;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 500;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--accent-text);
 }
 
 .kicker::before {
   content: "";
-  width: 1.6rem;
+  width: 1.75rem;
   height: 1px;
   background: currentColor;
-  opacity: 0.6;
+  opacity: 0.55;
+  flex-shrink: 0;
 }
 
 .eyebrow {
   font-family: var(--font-mono), monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.18em;
+  font-size: 0.67rem;
+  letter-spacing: 0.19em;
   text-transform: uppercase;
   color: var(--text-3);
 }
@@ -222,35 +219,45 @@ p {
 .mono {
   font-family: var(--font-mono), monospace;
   font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
 }
 
+/*
+  display-xl — hero headline.
+  Line-height 0.95: headlines this size need tighter leading
+  so adjacent lines feel unified, not floating apart.
+*/
 .display-xl {
-  font-size: clamp(2.4rem, 4.8vw, 4.75rem);
-  line-height: 1.0;
-  letter-spacing: -0.038em;
-  font-weight: 800;
-}
-
-.display-lg {
-  font-size: clamp(1.85rem, 3.4vw, 3.25rem);
-  line-height: 1.0;
-  letter-spacing: -0.036em;
+  font-size: clamp(2.6rem, 5.2vw, 5rem);
+  line-height: 0.95;
+  letter-spacing: -0.042em;
   font-weight: 700;
 }
 
+/*
+  display-lg — section headings.
+  Line-height 1.06: was 1.0 which was too compressed at 3rem.
+  Balanced, premium — matches Stripe and Linear heading treatment.
+*/
+.display-lg {
+  font-size: clamp(1.85rem, 3.2vw, 3rem);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  font-weight: 600;
+}
+
 .lead {
-  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
-  line-height: 1.55;
+  font-size: clamp(1rem, 1.6vw, 1.225rem);
+  line-height: 1.62;
   color: var(--text-2);
-  max-width: 46ch;
+  max-width: 52ch;
   text-wrap: pretty;
 }
 
-.accent-text { color: var(--accent-text); }
-.text-2 { color: var(--text-2); }
-.text-3 { color: var(--text-3); }
+/* ============================================================
+   Hairline rule
+   ============================================================ */
 
-/* Hairline rules */
 .hr {
   height: 1px;
   width: 100%;
@@ -259,7 +266,59 @@ p {
 }
 
 /* ============================================================
-   Components
+   Double-Bezel card pattern
+   Premium glass treatment:
+   - Outer ring at 0.045 opacity (was 0.03 — nearly invisible)
+   - Larger radius (1.25rem) matches contemporary SaaS design
+   - Box-shadow on outer for glass-edge highlight
+   ============================================================ */
+
+.double-bezel-outer {
+  padding: 2px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  /* Top-edge highlight simulates lit glass surface */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.double-bezel-inner {
+  background: var(--bg-2);
+  border-radius: calc(1.25rem - 2px);
+  /* Inner top glow reinforces the depth illusion */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+/* ============================================================
+   Card (generic)
+   Multi-layer hover shadow (Linear technique):
+   1. Inner rim highlight — glass edge
+   2. Deep ambient shadow — grounds the card
+   3. Accent glow — connects card to brand
+   ============================================================ */
+
+.card {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  background: var(--bg-2);
+  overflow: hidden;
+  transition:
+    border-color 240ms ease,
+    box-shadow 240ms ease;
+}
+
+.card:hover {
+  border-color: var(--line-2);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 20px 60px -20px var(--shadow),
+    0 8px 24px -8px rgba(59, 130, 246, 0.06);
+}
+
+/* ============================================================
+   Chips (rectangular — NOT pill)
    ============================================================ */
 
 .chip {
@@ -267,177 +326,258 @@ p {
   align-items: center;
   gap: 0.4rem;
   border: 1px solid var(--line-2);
-  border-radius: 999px;
-  padding: 0.32rem 0.72rem;
+  border-radius: 5px;
+  padding: 0.28rem 0.65rem;
   font-family: var(--font-mono), monospace;
-  font-size: 0.7rem;
+  font-size: 0.67rem;
   letter-spacing: 0.04em;
   color: var(--text-2);
-  background: color-mix(in srgb, var(--elevated) 60%, transparent);
-  transition: color 0.25s ease, border-color 0.25s ease, background-color 0.25s ease, transform 0.25s ease;
+  background: var(--elevated);
+  white-space: nowrap;
+}
+
+.chip-positive {
+  border-color: color-mix(in srgb, var(--positive) 32%, transparent);
+  color: var(--positive);
+  background: var(--positive-soft);
 }
 
 .chip-accent {
-  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
   color: var(--accent-text);
   background: var(--accent-soft);
 }
 
-.card {
-  position: relative;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--elevated) 88%, transparent), color-mix(in srgb, var(--bg-2) 88%, transparent));
-  box-shadow: 0 24px 70px -48px var(--shadow);
-  overflow: hidden;
-  /* transform/opacity only on hover → composited */
-  transition: border-color 0.28s ease, background-color 0.28s ease, box-shadow 0.28s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform;
-}
+/* ============================================================
+   Buttons
+   ============================================================ */
 
-.card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: radial-gradient(20rem 20rem at var(--mx, 50%) var(--my, 0%), var(--accent-soft), transparent 60%);
-  opacity: 0;
-  transition: opacity 0.4s ease;
-}
-
-.card:hover {
-  border-color: var(--line-2);
-  box-shadow: 0 32px 90px -54px color-mix(in srgb, var(--accent) 40%, var(--shadow));
-}
-
-/* Only lift non-framer-motion cards via CSS (Framer-controlled ones use whileHover instead) */
-.card:not([data-framer-motion]):hover {
-  transform: translateY(-3px);
-}
-
-.card:hover::after {
-  opacity: 1;
-}
-
-/* Buttons */
 .btn {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
-  min-height: 48px;
-  padding: 0 1.4rem;
-  border-radius: 14px;
-  font-size: 0.92rem;
-  font-weight: 650;
+  min-height: 44px;
+  padding: 0 1.35rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
   letter-spacing: -0.01em;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
-  will-change: transform;
+  transition:
+    transform 120ms var(--ease-out),
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
 }
 
-.btn:active { transform: scale(0.97); }
+.btn:active {
+  transform: scale(0.97);
+}
 
+/*
+  btn-accent — elevated, premium shadow treatment.
+  Two layers: inner ring (1px outline) + ambient glow.
+  Matches Stripe's CTA button depth.
+*/
 .btn-accent {
   background: var(--accent);
   color: var(--accent-ink);
-  box-shadow: 0 14px 32px -18px var(--accent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 4px 14px -4px rgba(59, 130, 246, 0.5),
+    0 1px 3px rgba(0, 0, 8, 0.3);
 }
 
 .btn-accent:hover {
   background: var(--accent-2);
-  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 8px 24px -6px rgba(59, 130, 246, 0.55),
+    0 2px 6px rgba(0, 0, 8, 0.35);
 }
 
 .btn-ghost {
   border-color: var(--line-2);
   color: var(--text);
-  background: transparent;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .btn-ghost:hover {
-  border-color: var(--text);
-  background: color-mix(in srgb, var(--text) 6%, transparent);
-  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.05);
 }
+
+.btn-text {
+  background: none;
+  border: none;
+  padding: 0;
+  min-height: auto;
+  color: var(--accent-text);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 4px;
+  transition: color 180ms ease;
+}
+
+.btn-text:hover {
+  color: var(--accent);
+}
+
+.btn-text:active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+
+/* ============================================================
+   Icon button
+   ============================================================ */
 
 .icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--elevated) 50%, transparent);
+  background: rgba(255, 255, 255, 0.02);
   color: var(--text-2);
-  transition: color 0.25s ease, border-color 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  will-change: transform;
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
 }
 
 .icon-btn:hover {
-  color: var(--accent-text);
-  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
-  transform: translateY(-2px);
+  color: var(--text);
+  border-color: var(--line-2);
+  background: var(--bg-3);
 }
 
 .icon-btn:active {
-  transform: translateY(0) scale(0.97);
+  transform: scale(0.95);
+  transition: transform 80ms var(--ease-out);
 }
 
-/* Inputs */
+/* ============================================================
+   Form fields
+   Fields need visible borders at rest — users must clearly see
+   where to type. Using var(--line-2) vs var(--line) for legibility.
+   ============================================================ */
+
 .field {
   width: 100%;
-  padding: 0.95rem 1.1rem;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--elevated) 55%, transparent);
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--elevated);
   color: var(--text);
-  transition: border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+  font-size: 0.9rem;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
   outline: none;
 }
 
-.field::placeholder { color: var(--text-3); }
-
-.field:focus {
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  background: color-mix(in srgb, var(--elevated) 80%, transparent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+.field::placeholder {
+  color: var(--text-3);
 }
 
 .field:hover {
-  border-color: var(--line-2);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Live availability dot with composited ring pulse */
-.signal-dot {
+.field:focus {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--elevated) 85%, rgba(59,130,246,0.05));
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+/* ============================================================
+   Tab strip
+   ============================================================ */
+
+.tab-strip {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-item {
   position: relative;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--accent);
+  padding: 0.7rem 1.2rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 180ms ease;
   flex-shrink: 0;
 }
 
-.signal-dot::after {
-  content: "";
-  position: absolute;
-  inset: -3px;
-  border-radius: 999px;
-  border: 1px solid var(--accent);
-  animation: ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+.tab-item:hover {
+  color: var(--text);
 }
 
-@keyframes ping {
-  0% { transform: scale(0.6); opacity: 0.9; }
-  80%, 100% { transform: scale(2.4); opacity: 0; }
+.tab-item[data-active="true"] {
+  color: var(--text);
+  font-weight: 600;
 }
 
-/* Text scramble / underline link */
+/* ============================================================
+   Status dot
+   Stripe/Linear style: pulsing ring shows active/live state.
+   Only animates when reduced-motion is not preferred.
+   ============================================================ */
+
+.status-dot {
+  position: relative;
+  display: inline-flex;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--positive);
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .status-dot::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--positive);
+    animation: dot-pulse 2.6s ease-out infinite;
+  }
+}
+
+@keyframes dot-pulse {
+  0% { transform: scale(1); opacity: 0.7; }
+  75%, 100% { transform: scale(2.8); opacity: 0; }
+}
+
+/* ============================================================
+   Link underline (scaleX reveal)
+   ============================================================ */
+
 .link-underline {
   position: relative;
   display: inline-flex;
@@ -455,7 +595,7 @@ p {
   background: currentColor;
   transform: scaleX(0);
   transform-origin: right;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 280ms var(--ease-out);
 }
 
 .link-underline:hover::after {
@@ -463,96 +603,55 @@ p {
   transform-origin: left;
 }
 
-/* Marquee ticker (transform-only, infinite) */
-.marquee {
-  display: flex;
-  width: max-content;
-  will-change: transform;
-  animation: marquee 38s linear infinite;
+/* ============================================================
+   Utility
+   ============================================================ */
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
-.marquee-reverse { animation-direction: reverse; }
-
-.marquee-track:hover .marquee { animation-play-state: paused; }
-
-@keyframes marquee {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(-50%, 0, 0); }
+.no-scrollbar {
+  scrollbar-width: none;
 }
-
-/* Custom cursor */
-.cursor-dot,
-.cursor-ring {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 9997;
-  pointer-events: none;
-  border-radius: 999px;
-  mix-blend-mode: difference;
-  will-change: transform;
-}
-
-.cursor-dot {
-  width: 7px;
-  height: 7px;
-  margin: -3.5px 0 0 -3.5px;
-  background: #fff;
-}
-
-.cursor-ring {
-  width: 38px;
-  height: 38px;
-  margin: -19px 0 0 -19px;
-  border: 1px solid color-mix(in srgb, var(--accent) 70%, white);
-}
-
-@media (hover: none), (pointer: coarse) {
-  .cursor-dot, .cursor-ring { display: none; }
-}
-
-/* Scroll progress */
-.scroll-progress {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  transform-origin: 0 50%;
-  background: var(--accent);
-  z-index: 9998;
-  will-change: transform;
-}
-
-/* Utility: hide scrollbar but keep scroll */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { scrollbar-width: none; }
 
 /* ============================================================
-   Reduced motion — disable all non-essential motion
+   Responsive overrides
    ============================================================ */
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  *, *::before, *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
-  .marquee { animation: none; }
-  .signal-dot::after { animation: none; }
-}
 
 @media (max-width: 640px) {
   .section {
-    padding-block: 4.75rem;
+    padding-block: clamp(3.5rem, 8vw, 5rem);
   }
 
   .display-xl {
-    font-size: clamp(2.2rem, 11.5vw, 3.4rem);
-    letter-spacing: -0.03em;
+    font-size: clamp(2.25rem, 11.5vw, 3.5rem);
+    letter-spacing: -0.034em;
+    line-height: 0.97;
   }
 
   .display-lg {
-    font-size: clamp(1.75rem, 9vw, 2.8rem);
+    font-size: clamp(1.7rem, 8.5vw, 2.6rem);
+    line-height: 1.08;
+  }
+}
+
+/* ============================================================
+   Reduced motion
+   Keep opacity/color transitions; remove transform-based movement.
+   Do NOT override transition-duration globally — kills 120ms
+   button :active press feedback.
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
   }
 }

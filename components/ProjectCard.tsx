@@ -1,81 +1,70 @@
 'use client';
 
-import { forwardRef } from 'react';
-import { ArrowUpRight, Github } from 'lucide-react';
-import { motion } from 'framer-motion';
 import type { Project } from '@/lib/projects';
-import { ease } from '@/lib/motion';
 
-interface ProjectCardProps {
+interface ProjectRowProps {
   project: Project;
   index: number;
   onOpen: (p: Project) => void;
+  isHovered?: boolean;
+  onHoverStart?: () => void;
+  onHoverEnd?: () => void;
 }
 
-const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCard(
-  { project, index, onOpen },
-  ref
-) {
-  // cursor-follow spotlight: only writes CSS vars, no layout/repaint of children
-  const onMove = (e: React.PointerEvent<HTMLElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
-    e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
+export default function ProjectCard({ project, index, onOpen, onHoverStart, onHoverEnd }: ProjectRowProps) {
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onOpen(project);
+    }
   };
 
   return (
-    <motion.article
-      ref={ref}
-      layout
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.96 }}
-      transition={{ duration: 0.45, ease }}
-      onPointerMove={onMove}
+    <div
+      className="group flex min-h-[76px] items-center gap-5 border-t border-[var(--line)] px-4 py-4 cursor-pointer rounded-lg"
+      style={{ transition: 'background-color 160ms ease' }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLDivElement).style.backgroundColor = 'rgba(255,255,255,0.03)';
+        onHoverStart?.();
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLDivElement).style.backgroundColor = '';
+        onHoverEnd?.();
+      }}
       onClick={() => onOpen(project)}
-      data-cursor="hover"
-      className="card group flex cursor-pointer flex-col p-6 transition-transform duration-300 will-change-transform hover:-translate-y-1.5"
+      onKeyDown={handleKey}
+      tabIndex={0}
+      role="button"
+      aria-label={`Open ${project.title} case study`}
     >
-      <div className="relative z-10 flex items-center justify-between">
-        <span className="mono text-sm text-3">{String(index + 1).padStart(2, '0')}</span>
-        <span className="chip chip-accent">
-          <span className="signal-dot !h-1.5 !w-1.5" />
+      <span className="mono shrink-0 w-8 text-xs text-[var(--text-3)] tabular-nums">
+        {String(index + 1).padStart(2, '0')}
+      </span>
+      <span className="hidden shrink-0 sm:block">
+        <span className={`chip text-[0.62rem] ${project.status === 'Production' ? 'chip-positive' : 'chip-accent'}`}>
           {project.status}
         </span>
+      </span>
+      <div className="min-w-0 flex-1">
+        <p
+          className="text-[1.0625rem] font-semibold leading-snug group-hover:text-[var(--accent-text)]"
+          style={{ transition: 'color 160ms ease' }}
+        >
+          {project.title}
+        </p>
+        <p className="mt-0.5 truncate text-sm text-[var(--text-2)]">{project.description}</p>
       </div>
-
-      <h3 className="relative z-10 mt-7 text-2xl font-semibold leading-tight transition-colors group-hover:text-[var(--accent-text)]">
-        {project.title}
-      </h3>
-      <p className="relative z-10 mt-3 flex-1 text-sm leading-relaxed text-2">{project.description}</p>
-
-      <div className="relative z-10 mt-7 flex flex-wrap gap-2">
+      <div className="hidden shrink-0 items-center gap-1.5 lg:flex">
         {project.tags.slice(0, 3).map((t) => (
           <span key={t} className="chip">{t}</span>
         ))}
       </div>
-
-      <div className="relative z-10 mt-6 flex items-center justify-between border-t border-line pt-4">
-        <span className="mono text-xs text-3">{project.date}</span>
-        <div className="flex items-center gap-3">
-          <a
-            href={project.github}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-2 transition-colors hover:text-[var(--accent-text)]"
-            aria-label="View source"
-          >
-            <Github size={17} />
-          </a>
-          <span className="flex items-center gap-1 text-sm font-medium text-2 transition-colors group-hover:text-[var(--accent-text)]">
-            Case study
-            <ArrowUpRight size={16} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-          </span>
-        </div>
-      </div>
-    </motion.article>
+      <span
+        className="inline-block shrink-0 mono text-sm font-medium text-[var(--accent-text)] group-hover:translate-x-1"
+        style={{ transition: 'transform 180ms var(--ease-out)' }}
+      >
+        Open &rarr;
+      </span>
+    </div>
   );
-});
-
-export default ProjectCard;
+}

@@ -6,9 +6,9 @@ import AboutSection from '@/components/AboutSection';
 import Work from '@/components/Work';
 import Experience from '@/components/Experience';
 import Stack from '@/components/Stack';
+import Testimonials from '@/components/Testimonials';
 import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
-import SiteChrome from '@/components/SiteChrome';
 
 export default function PageContent() {
   return (
@@ -16,7 +16,6 @@ export default function PageContent() {
       <a href="#content" className="skip-link">
         Skip to content
       </a>
-      <SiteChrome />
       <Navbar />
       <main id="content">
         <Hero />
@@ -24,6 +23,7 @@ export default function PageContent() {
         <Work />
         <Experience />
         <Stack />
+        <Testimonials />
         <Contact />
       </main>
       <Footer />

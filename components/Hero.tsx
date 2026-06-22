@@ -1,15 +1,11 @@
 'use client';
 
-import { ArrowRight, ArrowUpRight, Github, Linkedin, Mail } from 'lucide-react';
+import { Github, Linkedin, Mail } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { personalInfo } from '@/lib/data';
-import { ease } from '@/lib/motion';
-import SignalField from './SignalField';
-import Magnetic from './Magnetic';
-import Marquee from './Marquee';
+import { ease, easeOut } from '@/lib/motion';
 import Counter from './Counter';
-
-const tools = ['n8n', 'Apollo API', 'FastAPI', 'React', 'Next.js', 'Gemini', 'Django', 'Python', 'LLMs', 'MongoDB', 'TypeScript', 'Automation'];
+import Magnetic from './Magnetic';
 
 const socials = [
   { icon: Linkedin, href: personalInfo.linkedin, label: 'LinkedIn' },
@@ -18,17 +14,24 @@ const socials = [
 ];
 
 const stats = [
-  { v: 8,   suffix: '',   label: 'Projects' },
   { v: 100, suffix: 'K+', label: 'Tasks / day' },
-  { v: 40,  suffix: '%',  label: 'Time saved' },
+  { v: 8, suffix: '', label: 'Projects' },
+  { v: 40, suffix: '%', label: 'Time saved' },
 ];
 
-/* Line-by-line fade+rise: cleaner than word-by-word clip */
-const lineIn = (i: number, reduce: boolean | null) => ({
-  initial: { opacity: 0, y: reduce ? 0 : 28 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.75, ease, delay: 0.28 + i * 0.13 },
-});
+const activityFeed = [
+  { time: '09:14', event: 'Lead enrichment pipeline — 2,340 records processed', status: 'Live' },
+  { time: '08:47', event: 'SendGrid workflow dispatched — 1,100 contacts', status: 'Done' },
+  { time: '08:02', event: 'n8n automation node updated — retry logic patched', status: 'Done' },
+];
+
+function lineIn(i: number, reduce: boolean | null) {
+  return {
+    initial: { opacity: 0, y: reduce ? 0 : 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.6, ease, delay: 0.18 + i * 0.11 },
+  };
+}
 
 export default function Hero() {
   const reduce = useReducedMotion();
@@ -36,91 +39,87 @@ export default function Hero() {
   return (
     <section
       id="top"
-      className="relative flex min-h-[100svh] flex-col justify-center overflow-hidden pb-20 pt-28 sm:pt-32"
+      className="relative flex min-h-[100dvh] flex-col justify-center pt-28 pb-20"
     >
-      <SignalField />
-
       <div className="shell w-full">
-        {/* ── Status bar ──────────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.7, delay: 0.1 }}
-          className="mb-10 flex flex-wrap items-center gap-x-5 gap-y-2"
-        >
-          <span className="flex items-center gap-2 text-sm font-medium text-2">
-            <span className="signal-dot" />
-            AI Workflow Engineer &mdash; DemandNXT
-          </span>
-          <span
-            className="hidden h-4 w-px bg-[var(--line-2)] sm:block"
-            aria-hidden
-          />
-          <span className="mono text-xs font-medium uppercase tracking-wider accent-text">
-            Open to opportunities
-          </span>
-        </motion.div>
-
-        {/* ── Two-column grid ─────────────────────────────── */}
-        <div className="grid gap-10 lg:grid-cols-[1.45fr_0.68fr] lg:items-start">
-
-          {/* Left — headline + sub + CTAs */}
+        <div className="grid gap-12 lg:grid-cols-[7fr_5fr] lg:items-center lg:gap-16">
+          {/* Left column */}
           <div>
-            <h1
-              className="display-xl"
-              aria-label="I build AI systems that turn manual work into reliable automation."
+            {/* Role badge */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, ease: easeOut, delay: 0.08 }}
+              className="mb-8 flex flex-wrap items-center gap-x-3 gap-y-2"
             >
+              <span className="flex items-center gap-2 mono text-xs text-[var(--text-2)]">
+                <span className="status-dot" aria-hidden />
+                AI Workflow Engineer at DemandNXT
+              </span>
+              <span className="hidden h-3 w-px bg-[var(--line-2)] sm:block" aria-hidden />
+              <span className="mono text-xs text-[var(--accent-text)]">
+                Open to opportunities
+              </span>
+            </motion.div>
+
+            {/* Headline — line-by-line stagger */}
+            <h1 aria-label="I build AI systems that turn manual work into reliable automation.">
               {[
                 { text: 'I build AI systems', accent: false },
                 { text: 'that turn manual work', accent: false },
-                { text: 'into reliable automation.', accent: true },
-              ].map((line, i) => (
-                <span
-                  key={i}
-                  className="block overflow-hidden"
-                  style={{ paddingBottom: '0.06em' }}
-                >
-                  <motion.span
-                    className={`inline-block${line.accent ? ' accent-text' : ''}`}
-                    {...lineIn(i, reduce)}
-                  >
-                    {line.text}
-                  </motion.span>
-                </span>
-              ))}
+                { text: null, accent: true },
+              ].map((line, i) =>
+                line.accent ? (
+                  <span key={i} className="block overflow-hidden pb-[0.06em]">
+                    <motion.span className="inline-block display-xl" {...lineIn(i, reduce)}>
+                      into{' '}
+                      <span className="text-[var(--accent-text)]">reliable automation.</span>
+                    </motion.span>
+                  </span>
+                ) : (
+                  <span key={i} className="block overflow-hidden pb-[0.06em]">
+                    <motion.span className="inline-block display-xl" {...lineIn(i, reduce)}>
+                      {line.text}
+                    </motion.span>
+                  </span>
+                )
+              )}
             </h1>
 
+            {/* Subtitle */}
             <motion.p
-              initial={{ opacity: 0, y: reduce ? 0 : 14 }}
+              initial={{ opacity: 0, y: reduce ? 0 : 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease, delay: 0.72 }}
-              className="lead mt-7 max-w-[44ch]"
+              transition={{ duration: 0.55, ease, delay: 0.52 }}
+              className="lead mt-8 max-w-[44ch]"
             >
-              Multi-model pipelines, LLM apps, and structured output
-              that holds up in production &mdash; not just in a demo.
+              Multi-model pipelines, LLM apps, and structured output that holds up in
+              production &mdash; not just in a demo.
             </motion.p>
 
+            {/* CTA row */}
             <motion.div
-              initial={{ opacity: 0, y: reduce ? 0 : 14 }}
+              initial={{ opacity: 0, y: reduce ? 0 : 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease, delay: 0.88 }}
-              className="mt-8 flex flex-wrap items-center gap-3"
+              transition={{ duration: 0.5, ease, delay: 0.66 }}
+              className="mt-9 flex flex-wrap items-center gap-4"
             >
-              <Magnetic strength={0.35}>
-                <a href="#work" className="btn btn-accent" data-cursor="hover">
-                  See my work
-                  <ArrowRight size={17} />
-                </a>
-              </Magnetic>
-              <Magnetic strength={0.35}>
-                <a href="#contact" className="btn btn-ghost" data-cursor="hover">
-                  Get in touch
-                  <ArrowUpRight size={16} />
-                </a>
-              </Magnetic>
-              <span className="ml-1 flex items-center gap-1.5">
+              <a href="/resume.pdf" download className="group btn-text text-sm">
+                Download CV
+                <span className="inline-block transition-transform duration-[180ms] ease-out group-hover:translate-x-1">
+                  &rarr;
+                </span>
+              </a>
+              <span className="h-4 w-px bg-[var(--line-2)]" aria-hidden />
+              <a
+                href="#work"
+                className="text-sm text-[var(--text-2)] transition-colors duration-[180ms] hover:text-[var(--text)]"
+              >
+                See my work &darr;
+              </a>
+              <span className="flex items-center gap-1.5">
                 {socials.map(({ icon: Icon, href, label }) => (
-                  <Magnetic key={label} strength={0.5}>
+                  <Magnetic key={label} strength={0.45}>
                     <a
                       href={href}
                       target={label === 'Email' ? undefined : '_blank'}
@@ -128,77 +127,113 @@ export default function Hero() {
                       className="icon-btn"
                       aria-label={label}
                     >
-                      <Icon size={17} />
+                      <Icon size={16} />
                     </a>
                   </Magnetic>
                 ))}
               </span>
             </motion.div>
+
+            {/* Location strip */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.82 }}
+              className="mono mt-8 text-xs text-[var(--text-3)]"
+            >
+              Bengaluru, Karnataka &middot; Available for freelance
+            </motion.p>
           </div>
 
-          {/* Right — identity + stats card */}
+          {/* Right column — System Panel (Double-Bezel)
+              Ambient glow behind it connects the panel to the brand accent.
+              Scale from 0.96 — never 0, per STANDARDS. */}
           <motion.div
-            initial={{ opacity: 0, y: reduce ? 0 : 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.85, ease, delay: 1.0 }}
-            className="card overflow-hidden"
+            initial={{ opacity: 0, scale: reduce ? 1 : 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7, ease, delay: 0.88 }}
+            className="double-bezel-outer"
+            aria-label="Activity dashboard"
+            style={{
+              /* Accent-tinted ambient glow grounds the panel in space */
+              boxShadow:
+                'inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px rgba(59,130,246,0.08), 0 40px 100px -30px rgba(59,130,246,0.14)',
+            }}
           >
-            {/* Identity header */}
-            <div className="border-b border-line px-5 py-4">
-              <p className="font-semibold leading-snug">{personalInfo.name}</p>
-              <p className="mt-0.5 text-sm text-2">
-                Full-Stack Developer &amp; AI Workflow Engineer
-              </p>
-              <p className="mono mt-1.5 text-xs text-3">
-                {personalInfo.location}
-              </p>
-            </div>
-
-            {/* Stats grid */}
-            <div className="grid grid-cols-3 gap-px bg-[var(--line)]">
-              {stats.map((s) => (
-                <div
-                  key={s.label}
-                  className="bg-bg-2 px-3 py-5 text-center transition-colors duration-300 hover:bg-bg-3"
-                >
-                  <div className="text-2xl font-bold tabular-nums leading-none">
-                    <Counter value={s.v} suffix={s.suffix} />
-                  </div>
-                  <p className="eyebrow mt-2">{s.label}</p>
+            <div className="double-bezel-inner">
+              {/* Panel header */}
+              <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-3.5">
+                <span className="mono text-xs text-[var(--text-3)]">deena.dev / dashboard</span>
+                <div className="flex items-center gap-1.5" aria-hidden>
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
                 </div>
-              ))}
-            </div>
+              </div>
 
-            {/* Availability strip */}
-            <div className="flex items-center gap-2.5 border-t border-line bg-[color-mix(in_srgb,var(--accent-soft)_55%,transparent)] px-5 py-3.5">
-              <span className="signal-dot" />
-              <span className="text-sm font-medium accent-text">
-                Available for freelance work
-              </span>
+              {/* Stats grid — text-3xl for impact (was text-2xl) */}
+              <div className="grid grid-cols-3 divide-x divide-[var(--line)]">
+                {stats.map((s) => (
+                  <div
+                    key={s.label}
+                    className="flex flex-col items-center justify-center px-4 py-6"
+                    style={{ transition: 'background-color 160ms ease' }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--bg-3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.backgroundColor = '';
+                    }}
+                  >
+                    <div className="mono text-[1.75rem] font-bold leading-none text-[var(--text)] tabular-nums">
+                      <Counter value={s.v} suffix={s.suffix} duration={1.2} />
+                    </div>
+                    <p className="eyebrow mt-2.5">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Activity feed */}
+              <div className="border-t border-[var(--line)]">
+                {activityFeed.map((row, i) => (
+                  <div
+                    key={i}
+                    className="flex min-h-[54px] items-center gap-4 border-b border-[var(--line)] px-5 py-3.5 last:border-b-0"
+                    style={{ transition: 'background-color 160ms ease' }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--bg-3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.backgroundColor = '';
+                    }}
+                  >
+                    <span className="mono shrink-0 text-xs text-[var(--text-3)] tabular-nums">
+                      {row.time}
+                    </span>
+                    <p className="min-w-0 flex-1 text-xs text-[var(--text-2)] leading-snug">
+                      {row.event}
+                    </p>
+                    <span
+                      className={[
+                        'chip shrink-0 text-[0.6rem]',
+                        row.status === 'Live' ? 'chip-positive' : '',
+                      ].join(' ')}
+                    >
+                      {row.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Panel footer */}
+              <div className="flex items-center gap-2 px-5 py-3.5">
+                <span className="status-dot" aria-hidden />
+                <span className="mono text-xs text-[var(--text-3)]">Systems operational</span>
+              </div>
             </div>
           </motion.div>
         </div>
       </div>
-
-      {/* ── Ticker pinned to bottom ─────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1, delay: 1.25 }}
-        className="absolute inset-x-0 bottom-0 border-t border-line bg-[color-mix(in_srgb,var(--bg)_80%,transparent)] py-3 backdrop-blur-md"
-      >
-        <Marquee>
-          {tools.map((t) => (
-            <span
-              key={t}
-              className="mono mx-6 inline-flex items-center gap-3 text-sm text-3"
-            >
-              {t}
-              <span className="accent-text">/</span>
-            </span>
-          ))}
-        </Marquee>
-      </motion.div>
     </section>
   );
 }

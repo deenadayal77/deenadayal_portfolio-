@@ -4,15 +4,16 @@ export const personalInfo = {
   email: 'dayalbk77@gmail.com',
   phone: '+91 74111 39276',
   location: 'Bengaluru, Karnataka, India',
-  linkedin: 'https://linkedin.com/in/deenadayal-b-k',
+  linkedin: 'https://www.linkedin.com/in/deenadayal-b-k-033bk',
   github: 'https://github.com/deenadayal77',
+  resumeUrl: '/resume.pdf',
 };
 
 export const experience = [
   {
     id: 1,
     title: 'AI Workflow Engineer',
-    company: 'DemandNXT',
+    company: 'Kiplo',
     location: 'Bengaluru',
     period: 'Mar 2026 - Present',
     type: 'Full-Time',

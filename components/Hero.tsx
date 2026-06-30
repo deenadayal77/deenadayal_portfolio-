@@ -54,7 +54,7 @@ export default function Hero() {
             >
               <span className="flex items-center gap-2 mono text-xs text-[var(--text-2)]">
                 <span className="status-dot" aria-hidden />
-                AI Workflow Engineer at DemandNXT
+                AI Workflow Engineer at Kiplo
               </span>
               <span className="hidden h-3 w-px bg-[var(--line-2)] sm:block" aria-hidden />
               <span className="mono text-xs text-[var(--accent-text)]">
@@ -104,7 +104,7 @@ export default function Hero() {
               transition={{ duration: 0.5, ease, delay: 0.66 }}
               className="mt-9 flex flex-wrap items-center gap-4"
             >
-              <a href="/resume.pdf" download className="group btn-text text-sm">
+              <a href={personalInfo.resumeUrl} download target="_blank" rel="noopener noreferrer" className="group btn-text text-sm">
                 Download CV
                 <span className="inline-block transition-transform duration-[180ms] ease-out group-hover:translate-x-1">
                   &rarr;
@@ -123,7 +123,7 @@ export default function Hero() {
                     <a
                       href={href}
                       target={label === 'Email' ? undefined : '_blank'}
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                       className="icon-btn"
                       aria-label={label}
                     >

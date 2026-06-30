@@ -84,10 +84,34 @@ export default function Navbar() {
           {/* Wordmark */}
           <a
             href="#top"
-            className="flex items-center text-[1.1rem] font-semibold tracking-tight"
+            className="flex items-center gap-2 text-[1.05rem] font-semibold tracking-tight"
             aria-label="Home"
           >
-            deena<span className="text-[var(--accent-text)]">.</span>
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden
+              style={{ flexShrink: 0 }}
+            >
+              <circle cx="12" cy="12" r="11" stroke="var(--accent)" strokeWidth="1.2" />
+              <circle cx="12" cy="12" r="11" fill="var(--accent-soft)" />
+              <text
+                x="12"
+                y="16.5"
+                textAnchor="middle"
+                fontSize="10"
+                fontWeight="700"
+                fill="var(--accent-text)"
+                fontFamily="inherit"
+                letterSpacing="-0.3"
+              >
+                DK
+              </text>
+            </svg>
+            Deenadayal B K
           </a>
 
           {/* Desktop nav links */}

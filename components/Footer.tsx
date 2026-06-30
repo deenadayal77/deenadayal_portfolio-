@@ -39,20 +39,13 @@ export default function Footer() {
                 xmlns="http://www.w3.org/2000/svg"
                 aria-hidden
               >
-                <circle cx="12" cy="12" r="11" stroke="var(--accent)" strokeWidth="1.2" />
                 <circle cx="12" cy="12" r="11" fill="var(--accent-soft)" />
-                <text
-                  x="12"
-                  y="16.5"
-                  textAnchor="middle"
-                  fontSize="10"
-                  fontWeight="700"
-                  fill="var(--accent-text)"
-                  fontFamily="inherit"
-                  letterSpacing="-0.3"
-                >
-                  DK
-                </text>
+                <circle cx="12" cy="12" r="11" stroke="var(--accent)" strokeWidth="1.2" />
+                <line x1="12" y1="8.5" x2="8.5" y2="15.5" stroke="var(--accent)" strokeWidth="1.15" strokeLinecap="round" />
+                <line x1="12" y1="8.5" x2="15.5" y2="15.5" stroke="var(--accent)" strokeWidth="1.15" strokeLinecap="round" />
+                <circle cx="12" cy="8.5" r="1.6" fill="var(--accent-text)" />
+                <circle cx="8.5" cy="15.5" r="1.4" fill="var(--accent)" />
+                <circle cx="15.5" cy="15.5" r="1.4" fill="var(--accent)" />
               </svg>
               <span className="text-[0.95rem] font-semibold tracking-tight">
                 Deenadayal B K

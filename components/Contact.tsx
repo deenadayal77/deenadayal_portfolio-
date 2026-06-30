@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Mail, Linkedin, MapPin, Check, Loader2 } from 'lucide-react';
+import { Mail, Linkedin, Github, MapPin, Check, Loader2, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { personalInfo } from '@/lib/data';
 import { Reveal } from './Reveal';
@@ -28,8 +28,14 @@ const channels = [
   {
     icon: Linkedin,
     label: 'LinkedIn',
-    value: 'deenadayal-b-k',
+    value: 'deenadayal-b-k-033bk',
     href: personalInfo.linkedin,
+  },
+  {
+    icon: Github,
+    label: 'GitHub',
+    value: 'deenadayal77',
+    href: personalInfo.github,
   },
   {
     icon: MapPin,
@@ -156,7 +162,7 @@ export default function Contact() {
                     key={label}
                     href={href}
                     target={label === 'Email' ? undefined : '_blank'}
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                   >
                     {inner}
                   </a>
@@ -165,8 +171,43 @@ export default function Contact() {
                 );
               })}
 
+              {/* Availability + response time */}
+              <div
+                className="flex items-center gap-4 rounded-xl border border-[var(--line)] bg-[var(--bg-2)] px-5 py-4"
+              >
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--line)]"
+                  style={{ background: 'var(--elevated)' }}
+                >
+                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--positive)]" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="eyebrow">Availability</p>
+                  <p className="mt-0.5 text-sm font-medium" style={{ color: 'var(--positive)' }}>
+                    Open to opportunities
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="flex items-center gap-4 rounded-xl border border-[var(--line)] bg-[var(--bg-2)] px-5 py-4"
+              >
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--line)]"
+                  style={{ background: 'var(--elevated)' }}
+                >
+                  <Clock size={16} className="text-[var(--text-2)]" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="eyebrow">Response Time</p>
+                  <p className="mt-0.5 text-sm font-medium text-[var(--text)]">
+                    Usually within 24 hours
+                  </p>
+                </div>
+              </div>
+
               {/* Live timezone */}
-              <div className="flex items-center gap-2 px-1 pt-2.5">
+              <div className="flex items-center gap-2 px-1 pt-1">
                 <span className="status-dot shrink-0" aria-hidden />
                 <AnimatePresence mode="wait">
                   <motion.span

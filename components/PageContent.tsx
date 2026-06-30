@@ -6,7 +6,6 @@ import AboutSection from '@/components/AboutSection';
 import Work from '@/components/Work';
 import Experience from '@/components/Experience';
 import Stack from '@/components/Stack';
-import Testimonials from '@/components/Testimonials';
 import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
 
@@ -23,7 +22,6 @@ export default function PageContent() {
         <Work />
         <Experience />
         <Stack />
-        <Testimonials />
         <Contact />
       </main>
       <Footer />

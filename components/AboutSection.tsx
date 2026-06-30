@@ -6,7 +6,7 @@ import { rise, riseSmall } from '@/lib/motion';
 
 const facts = [
   ['Role', 'AI Workflow Engineer'],
-  ['Company', 'DemandNXT'],
+  ['Company', 'Kiplo'],
   ['Based in', 'Bengaluru, Karnataka'],
   ['Education', 'CSE — PES College of Engineering'],
   ['Leadership', 'President, ISTE Student Chapter'],
@@ -27,7 +27,7 @@ export default function AboutSection() {
           <div>
             <Reveal variants={rise}>
               <p className="display-lg max-w-[26ch]">
-                I&rsquo;m a CS engineer who likes the unglamorous part of software &mdash;
+                I&rsquo;m a CS Engineer who likes the unglamorous part of software &mdash;
                 making systems{' '}
                 <span className="text-[var(--accent-text)]">talk to each other</span> and
                 keep working when no one&rsquo;s watching.
@@ -37,7 +37,7 @@ export default function AboutSection() {
             <Stagger className="mt-9 space-y-6" gap={0.08}>
               <Reveal variants={riseSmall}>
                 <p className="text-[var(--text-2)] leading-relaxed max-w-[52ch]">
-                  Today I design AI-powered workflow systems at DemandNXT &mdash; reducing
+                  Today I design AI-powered workflow systems at Kiplo &mdash; reducing
                   manual operations, improving lead quality, and connecting business tools
                   through automation that&rsquo;s built to be resilient, not just clever.
                 </p>
@@ -56,7 +56,7 @@ export default function AboutSection() {
               <div className="mt-5 flex items-center gap-2.5">
                 <span className="status-dot" aria-hidden />
                 <span className="mono text-xs text-[var(--text-3)]">
-                  DemandNXT &middot; AI Workflow Engineer &middot; Mar 2026 – Present
+                  Kiplo &middot; AI Workflow Engineer &middot; Mar 2026 – Present
                 </span>
               </div>
             </Reveal>

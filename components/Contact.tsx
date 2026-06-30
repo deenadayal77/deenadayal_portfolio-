@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Mail, Linkedin, Github, MapPin, Check, Loader2, Clock } from 'lucide-react';
+import { Mail, Linkedin, MapPin, Check, Loader2, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { personalInfo } from '@/lib/data';
 import { Reveal } from './Reveal';
@@ -30,12 +30,6 @@ const channels = [
     label: 'LinkedIn',
     value: 'deenadayal-b-k-033bk',
     href: personalInfo.linkedin,
-  },
-  {
-    icon: Github,
-    label: 'GitHub',
-    value: 'deenadayal77',
-    href: personalInfo.github,
   },
   {
     icon: MapPin,

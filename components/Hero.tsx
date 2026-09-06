@@ -4,19 +4,12 @@ import { Github, Linkedin, Mail } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { personalInfo } from '@/lib/data';
 import { ease, easeOut } from '@/lib/motion';
-import Counter from './Counter';
 import Magnetic from './Magnetic';
 
 const socials = [
   { icon: Linkedin, href: personalInfo.linkedin, label: 'LinkedIn' },
   { icon: Github, href: personalInfo.github, label: 'GitHub' },
   { icon: Mail, href: `mailto:${personalInfo.email}`, label: 'Email' },
-];
-
-const stats = [
-  { v: 100, suffix: 'K+', label: 'Tasks / day' },
-  { v: 8, suffix: '', label: 'Projects' },
-  { v: 40, suffix: '%', label: 'Time saved' },
 ];
 
 const activityFeed = [
@@ -54,7 +47,7 @@ export default function Hero() {
             >
               <span className="flex items-center gap-2 mono text-xs text-[var(--text-2)]">
                 <span className="status-dot" aria-hidden />
-                AI Workflow Engineer at Kiplo
+                AI Workflow Engineer at Kipplo
               </span>
               <span className="hidden h-3 w-px bg-[var(--line-2)] sm:block" aria-hidden />
               <span className="mono text-xs text-[var(--accent-text)]">
@@ -171,30 +164,8 @@ export default function Hero() {
                 </div>
               </div>
 
-              {/* Stats grid — text-3xl for impact (was text-2xl) */}
-              <div className="grid grid-cols-3 divide-x divide-[var(--line)]">
-                {stats.map((s) => (
-                  <div
-                    key={s.label}
-                    className="flex flex-col items-center justify-center px-4 py-6"
-                    style={{ transition: 'background-color 160ms ease' }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--bg-3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.backgroundColor = '';
-                    }}
-                  >
-                    <div className="mono text-[1.75rem] font-bold leading-none text-[var(--text)] tabular-nums">
-                      <Counter value={s.v} suffix={s.suffix} duration={1.2} />
-                    </div>
-                    <p className="eyebrow mt-2.5">{s.label}</p>
-                  </div>
-                ))}
-              </div>
-
               {/* Activity feed */}
-              <div className="border-t border-[var(--line)]">
+              <div>
                 {activityFeed.map((row, i) => (
                   <div
                     key={i}

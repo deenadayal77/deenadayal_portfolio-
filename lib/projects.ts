@@ -60,26 +60,7 @@ export const projects: Project[] = [
     role: 'AI Workflow Engineer',
     status: 'Production'
   },
-  {
-    id: 'half-sendgrid',
-    title: 'SendGrid Email Segmentation Workflow',
-    description: 'Audience segmentation with conditional routing for targeted campaigns.',
-    tags: ['n8n', 'SendGrid API', 'Segmentation', 'Automation'],
-    github: 'https://github.com/deenadayal77',
-    featured: true,
-    problem: 'One-size-fits-all emails have low engagement. Manual segmentation is time-consuming.',
-    whatBuilt: 'n8n workflow automating audience segmentation and conditional routing based on subscriber attributes.',
-    techStack: ['n8n', 'SendGrid API', 'Conditional Logic', 'Data Filtering'],
-    judgmentCalls: [
-      { title: 'Conditional Routing', description: 'Multi-branch logic routes subscribers to segment-specific campaigns.' },
-      { title: 'Preferences', description: 'Preference center integration respects communication choices.' },
-      { title: 'Analytics', description: 'Segment-level metrics track campaign effectiveness.' }
-    ],
-    impact: '45%+ engagement boost. 60%+ fewer unsubscribes. 10 mins to launch.',
-    date: 'Feb 2026 - Mar 2026',
-    role: 'AI Workflow Engineer',
-    status: 'Production'
-  },
+
   {
     id: 'reddit-generator',
     title: 'Reddit Comments Generator & Poster',

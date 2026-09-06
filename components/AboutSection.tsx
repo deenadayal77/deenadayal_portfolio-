@@ -1,12 +1,13 @@
 'use client';
 
+import Image from 'next/image';
 import { personalInfo } from '@/lib/data';
 import { Reveal, Stagger } from './Reveal';
 import { rise, riseSmall } from '@/lib/motion';
 
 const facts = [
   ['Role', 'AI Workflow Engineer'],
-  ['Company', 'Kiplo'],
+  ['Company', 'Kipplo Technologies'],
   ['Based in', 'Bengaluru, Karnataka'],
   ['Education', 'CSE — PES College of Engineering'],
   ['Leadership', 'President, ISTE Student Chapter'],
@@ -37,7 +38,7 @@ export default function AboutSection() {
             <Stagger className="mt-9 space-y-6" gap={0.08}>
               <Reveal variants={riseSmall}>
                 <p className="text-[var(--text-2)] leading-relaxed max-w-[52ch]">
-                  Today I design AI-powered workflow systems at Kiplo &mdash; reducing
+                  Today I design AI-powered workflow systems at Kipplo &mdash; reducing
                   manual operations, improving lead quality, and connecting business tools
                   through automation that&rsquo;s built to be resilient, not just clever.
                 </p>
@@ -56,7 +57,7 @@ export default function AboutSection() {
               <div className="mt-5 flex items-center gap-2.5">
                 <span className="status-dot" aria-hidden />
                 <span className="mono text-xs text-[var(--text-3)]">
-                  Kiplo &middot; AI Workflow Engineer &middot; Mar 2026 – Present
+                  Kipplo Technologies Pvt. Ltd. &middot; AI Workflow Engineer &middot; July 2026 – Present
                 </span>
               </div>
             </Reveal>
@@ -65,7 +66,20 @@ export default function AboutSection() {
           {/* Right — profile spec card (Double-Bezel) */}
           <Reveal variants={rise}>
             <div className="double-bezel-outer">
-              <div className="double-bezel-inner">
+              <div className="double-bezel-inner overflow-hidden">
+                {/* Profile photo */}
+                <div className="relative w-full aspect-[4/3] max-h-72 overflow-hidden border-b border-[var(--line)] bg-[var(--bg-2)] group">
+                  <Image
+                    src="/profile.jpg"
+                    alt="Deena Dayal B K"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 400px"
+                    className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                    priority
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-1)]/80 via-transparent to-transparent pointer-events-none" />
+                </div>
+
                 {/* Card header */}
                 <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
                   <span className="eyebrow">Profile</span>

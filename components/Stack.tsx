@@ -184,8 +184,8 @@ export default function Stack() {
           <span className="kicker">Capabilities</span>
         </Reveal>
         <Reveal variants={rise} delay={0.04}>
-          <h2 className="display-lg mt-4">
-            What I <span className="text-[var(--accent-text)]">build.</span>
+          <h2 className="display-lg mt-4 text-[var(--accent-text)]">
+            What I build.
           </h2>
         </Reveal>
 
@@ -285,7 +285,7 @@ export default function Stack() {
         {/* Zone 2 — Tech inventory grid */}
         <div className="mt-20 border-t border-[var(--line)] pt-14">
           <Reveal>
-            <p className="eyebrow mb-8">Full tech inventory</p>
+            <p className="eyebrow mb-8 text-[var(--accent-text)] font-semibold">Full tech inventory</p>
           </Reveal>
           <motion.div
             className="grid grid-cols-2 gap-8 md:grid-cols-4"
